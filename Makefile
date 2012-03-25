@@ -32,7 +32,6 @@ C_FILES =	Accelerometer.c \
 			Sprites.c \
 			Startup.c \
 			System.c \
-			Utils.c \
 			VGA.c \
 			Graphics/Bitmap.c \
 			Graphics/DrawingBitmaps.c \
@@ -40,7 +39,12 @@ C_FILES =	Accelerometer.c \
 			Graphics/DrawingPixels.c \
 			Graphics/DrawingRectangles.c \
 			Graphics/DrawingRLEBitmaps.c \
-			Graphics/DrawingStraightLines.c
+			Graphics/DrawingStraightLines.c \
+			VectorLibrary/Integer.c \
+			VectorLibrary/VectorFixed.c \
+			VectorLibrary/MatrixFixed.c \
+			VectorLibrary/QuaternionFixed.c \
+			Rasterize.c
 			
 S_FILES = 
 
@@ -63,7 +67,7 @@ upload: $(NAME).bin
 	-c "reset run" -c shutdown
 
 debug:
-	arm-eabi-gdb $(NAME).elf \
+	arm-none-eabi-gdb $(NAME).elf \
 	--eval-command="target remote | openocd -f interface/stlink-v2.cfg -f target/stm32f4x_stlink.cfg -c 'gdb_port pipe'"
 
 clean:

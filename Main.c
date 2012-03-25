@@ -10,6 +10,8 @@
 #include "Random.h"
 #include "Utils.h"
 
+#include "Rasterize.h"
+
 #include "Graphics/Bitmap.h"
 #include "Graphics/Drawing.h"
 
@@ -20,8 +22,8 @@ static void Starfield();
 static void InitializeLEDFlow();
 static void RunLEDFlow();
 static void Epileptor();
-
-static uint32_t sqrti(uint32_t n);
+static void Rasterbars();
+static void Rasterize();
 
 int main()
 {
@@ -40,6 +42,8 @@ int main()
 
 	for(;;)
 	{
+		Rasterize();
+		Rasterbars();
 		Starfield();
 		Rotozoom();
 		Epileptor();
@@ -369,31 +373,6 @@ static void RunLEDFlow()
 	SetLEDs(leds);
 }
 
-
-
-static uint32_t sqrti(uint32_t n)
-{
-	uint32_t s,t;
-
-	#define sqrtBit(k) \
-	t = s+(1UL<<(k-1)); t <<= k+1; if (n >= t) { n -= t; s |= 1UL<<k; }
-
-	s=0;
-	if(n>=1<<30) { n-=1<<30; s=1<<15; }
-	sqrtBit(14); sqrtBit(13); sqrtBit(12); sqrtBit(11); sqrtBit(10);
-	sqrtBit(9); sqrtBit(8); sqrtBit(7); sqrtBit(6); sqrtBit(5);
-	sqrtBit(4); sqrtBit(3); sqrtBit(2); sqrtBit(1);
-	if(n>s<<1) s|=1;
-
-	#undef sqrtBit
-
-	return s;
-}
-
-
-
-
-
 static void DrawBlob(Bitmap *bitmap,int x0,int y0,int c);
 
 static void Epileptor()
@@ -488,7 +467,117 @@ static void DrawBlob(Bitmap *bitmap,int x0,int y0,int c)
 	DrawHorizontalLine(bitmap,x0-rowlengths[row]/2,y0+row-16,rowlengths[row],c);
 }
 
+static void Rasterbars()
+{
+	static uint8_t palette[36]=
+	{
+		RawRGB(7,0,0),RawRGB(7,1,0),RawRGB(7,2,1),
+		RawRGB(7,3,1),RawRGB(7,4,2),RawRGB(7,5,2),
 
+		RawRGB(7,7,0),RawRGB(7,7,1),RawRGB(7,7,1),
+		RawRGB(7,7,2),RawRGB(7,7,2),RawRGB(7,7,3),
+		
+		RawRGB(0,7,0),RawRGB(1,7,0),RawRGB(2,7,1),
+		RawRGB(3,7,1),RawRGB(4,7,2),RawRGB(5,7,2),
+
+		RawRGB(0,7,3),RawRGB(1,7,3),RawRGB(2,7,3),
+		RawRGB(3,7,3),RawRGB(4,7,3),RawRGB(5,7,3),
+
+		RawRGB(0,0,3),RawRGB(1,1,3),RawRGB(2,2,3),
+		RawRGB(3,3,3),RawRGB(4,4,3),RawRGB(5,5,3),
+
+		RawRGB(7,0,3),RawRGB(7,1,3),RawRGB(7,2,3),
+		RawRGB(7,3,3),RawRGB(7,4,3),RawRGB(7,5,3),
+		
+	};
+
+	uint8_t *framebuffer1=(uint8_t *)0x20000000;
+	uint8_t *framebuffer2=(uint8_t *)0x20010000;
+	memset(framebuffer1,0,320*200);
+	memset(framebuffer2,0,320*200);
+
+	IntializeVGAScreenMode320x200(framebuffer1);
+
+	Bitmap frame1,frame2;
+	InitializeBitmap(&frame1,320,200,320,framebuffer1);
+	InitializeBitmap(&frame2,320,200,320,framebuffer2);
+
+	int t=0;
+
+	while(!UserButtonState())
+	{
+		WaitVBL();
+
+		Bitmap *currframe;
+		if(t&1)
+		{
+			currframe=&frame2;
+			SetFrameBuffer(framebuffer1);
+		}
+		else
+		{
+			currframe=&frame1;
+			SetFrameBuffer(framebuffer2);
+		}
+
+		SetLEDs(1<<((t/3)&3));
+
+		uint8_t* pixels = currframe->pixels;
+		int32_t size = 2;
+		for( uint32_t x = 0; x < 320; x++ ) {
+			for( uint32_t y = 0; y < 200; y++ ) {
+				pixels[x+y*320] = palette[((y+x/2-t)/size)%36];
+			}
+		}
+
+		t++;
+	}
+
+	while(UserButtonState());
+}
+
+static void Rasterize()
+{
+	uint8_t *framebuffer1=(uint8_t *)0x20000000;
+	uint8_t *framebuffer2=(uint8_t *)0x20010000;
+	memset(framebuffer1,0,320*200);
+	memset(framebuffer2,0,320*200);
+
+	IntializeVGAScreenMode320x200(framebuffer1);
+
+	Bitmap frame1,frame2;
+	InitializeBitmap(&frame1,320,200,320,framebuffer1);
+	InitializeBitmap(&frame2,320,200,320,framebuffer2);
+
+	int t=0;
+
+	while(!UserButtonState())
+	{
+		WaitVBL();
+
+		Bitmap *currframe;
+		if(t&1)
+		{
+			currframe=&frame2;
+			SetFrameBuffer(framebuffer1);
+		}
+		else
+		{
+			currframe=&frame1;
+			SetFrameBuffer(framebuffer2);
+		}
+
+		SetLEDs(1<<((t/3)&3));
+		
+		uint8_t* pixels = currframe->pixels;
+		memset(pixels,0,320*200);
+		RasterizeTest(pixels);
+
+		t++;
+	}
+
+	while(UserButtonState());
+}
 
 
 volatile uint32_t SysTickCounter=0;
