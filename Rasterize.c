@@ -36,44 +36,6 @@ typedef struct {
 	int32_t v[3];
 } index_triangle_t;
 
-const vertex_t cubeVertices[] = {
-	{ V( -1, -1,  1 ), RGB(0,0,3) }, // 0: upper front left
-	{ V(  1, -1,  1 ), RGB(7,0,3) }, // 1: upper front right
-	{ V(  1,  1,  1 ), RGB(7,7,3) }, // 2: lower front right
-	{ V( -1,  1,  1 ), RGB(0,7,3) }, // 3: lower front left
-	{ V( -1, -1, -1 ), RGB(0,0,0) }, // 4: upper back  left
-	{ V(  1, -1, -1 ), RGB(7,0,0) }, // 5: upper back  right
-	{ V(  1,  1, -1 ), RGB(7,7,0) }, // 6: lower back  right
-	{ V( -1,  1, -1 ), RGB(0,7,0) }  // 7: lower back  left
-};
-
-const int32_t numFaces = 12;
-const index_triangle_t cubeFaces[] = {
-	// Front
-	{0, 1, 2},
-	{0, 2, 3},
-
-	// Back
-	{4, 7, 6},
-	{4, 6, 5},
-
-	// Right
-	{1, 5, 6},
-	{1, 6, 2},
-
-	// Left
-	{4, 0, 3},
-	{4, 3, 7},
-
-	// Top
-	{4, 5, 1},
-	{4, 1, 0},
-
-	// Bottom
-	{7, 2, 6},
-	{7, 3, 2}
-};
-
 void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat4x4_t proj ) {
 	tri.v[0].p = imat4x4transform(modelview,tri.v[0].p);
 	tri.v[1].p = imat4x4transform(modelview,tri.v[1].p);
@@ -307,6 +269,45 @@ lower_half_render:
 
 void RasterizeTest(uint8_t* image) {
 	static int32_t rotcnt;
+
+
+	const vertex_t cubeVertices[] = {
+		{ V( -1, -1,  1 ), RGB(0,0,3) }, // 0: upper front left
+		{ V(  1, -1,  1 ), RGB(7,0,3) }, // 1: upper front right
+		{ V(  1,  1,  1 ), RGB(7,7,3) }, // 2: lower front right
+		{ V( -1,  1,  1 ), RGB(0,7,3) }, // 3: lower front left
+		{ V( -1, -1, -1 ), RGB(0,0,0) }, // 4: upper back  left
+		{ V(  1, -1, -1 ), RGB(7,0,0) }, // 5: upper back  right
+		{ V(  1,  1, -1 ), RGB(7,7,0) }, // 6: lower back  right
+		{ V( -1,  1, -1 ), RGB(0,7,0) }  // 7: lower back  left
+	};
+
+	const int32_t numFaces = 12;
+	const index_triangle_t cubeFaces[] = {
+		// Front
+		{0, 1, 2},
+		{0, 2, 3},
+
+		// Back
+		{4, 7, 6},
+		{4, 6, 5},
+
+		// Right
+		{1, 5, 6},
+		{1, 6, 2},
+
+		// Left
+		{4, 0, 3},
+		{4, 3, 7},
+
+		// Top
+		{4, 5, 1},
+		{4, 1, 0},
+
+		// Bottom
+		{7, 2, 6},
+		{7, 3, 2}
+	};
 	
 	// Projection matrix
 	imat4x4_t proj = imat4x4diagonalperspective(IntToFixed(45),idiv(IntToFixed(WIDTH),IntToFixed(HEIGHT)),128,IntToFixed(15));
