@@ -554,23 +554,24 @@ static void Rasterize()
 	while(!UserButtonState())
 	{
 		WaitVBL();
-
+		
 		Bitmap *currframe;
 		if(t&1)
 		{
-			currframe=&frame2;
 			SetFrameBuffer(framebuffer1);
+			ClearBitmap(&frame2);
+			currframe=&frame2;			
 		}
 		else
 		{
-			currframe=&frame1;
 			SetFrameBuffer(framebuffer2);
+			ClearBitmap(&frame1);
+			currframe=&frame1;			
 		}
 
-		SetLEDs(1<<((t/3)&3));
+		SetLEDs(0);
 		
 		uint8_t* pixels = currframe->pixels;
-		memset(pixels,0,320*200);
 		RasterizeTest(pixels);
 
 		t++;

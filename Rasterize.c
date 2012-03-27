@@ -5,15 +5,21 @@
 #include "VectorLibrary/VectorFixed.h"
 #include "VectorLibrary/MatrixFixed.h"
 
+#include "LED.h"
+
 #define WIDTH 320
 #define HEIGHT 200
 
 #define MIN_DIFF 8097
 #define D_CORRECTION 4100
 
-#define R(x) (IntToFixed( ((x) & (7 << 5)) >> 5))
-#define G(x) (IntToFixed( ((x) & (7 << 2)) >> 2))
-#define B(x) (IntToFixed( (x) & (3) ))
+#define R(x) (F( ((x) & (7 << 5)) >> 5 ))
+#define G(x) (F( ((x) & (7 << 2)) >> 2 ))
+#define B(x) (F( (x) & (3) ))
+
+#define RGB(r,g,b) ((r)<<5 | (g)<<2 | (b))
+
+#define V(x,y,z) {F(x),F(y),F(z),F(1)}
 
 #define Viewport(x,w,s) (imul(idiv((x),(w))+IntToFixed(1),IntToFixed((s)/2)))
 
@@ -26,41 +32,72 @@ typedef struct {
 	vertex_t v[3];
 } triangle_t;
 
-int32_t rotcnt = 0;
+typedef struct {
+	int32_t v[3];
+} index_triangle_t;
 
-void RasterizeTest(uint8_t* image) {
-	imat4x4_t proj = imat4x4diagonalperspective(IntToFixed(45),IntToFixed(1),64,IntToFixed(50));
-	
-	// For each triangle
-	triangle_t tri;
-	tri.v[0].p = ivec4(IntToFixed(0),IntToFixed(-1),0,IntToFixed(1));
-	tri.v[1].p = ivec4(IntToFixed(-1),IntToFixed(1),0,IntToFixed(1));
-	tri.v[2].p = ivec4(IntToFixed(1),IntToFixed(1),0,IntToFixed(1));
-	tri.v[0].c = (7 << 5) + (1<<2) + 1;
-	tri.v[1].c = (7 << 2) + (1<<5) + 1;
-	tri.v[2].c = (3) + (1<<2) + (1<<5);
+const vertex_t cubeVertices[] = {
+	{ V( -1, -1,  1 ), RGB(0,0,3) }, // 0: upper front left
+	{ V(  1, -1,  1 ), RGB(7,0,3) }, // 1: upper front right
+	{ V(  1,  1,  1 ), RGB(7,7,3) }, // 2: lower front right
+	{ V( -1,  1,  1 ), RGB(0,7,3) }, // 3: lower front left
+	{ V( -1, -1, -1 ), RGB(0,0,0) }, // 4: upper back  left
+	{ V(  1, -1, -1 ), RGB(7,0,0) }, // 5: upper back  right
+	{ V(  1,  1, -1 ), RGB(7,7,0) }, // 6: lower back  right
+	{ V( -1,  1, -1 ), RGB(0,7,0) }  // 7: lower back  left
+};
 
-	// Transform
-	imat4x4_t modelview = imat4x4affinemul(imat4x4translate(ivec3(0,0,IntToFixed(-4))),imat4x4rotatey(rotcnt/9));
-	modelview = imat4x4affinemul(modelview,imat4x4rotatex(rotcnt/3));
-	rotcnt += 10;
+const int32_t numFaces = 12;
+const index_triangle_t cubeFaces[] = {
+	// Front
+	{0, 1, 2},
+	{0, 2, 3},
 
+	// Back
+	{4, 7, 6},
+	{4, 6, 5},
+
+	// Right
+	{1, 5, 6},
+	{1, 6, 2},
+
+	// Left
+	{4, 0, 3},
+	{4, 3, 7},
+
+	// Top
+	{4, 5, 1},
+	{4, 1, 0},
+
+	// Bottom
+	{7, 2, 6},
+	{7, 3, 2}
+};
+
+void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat4x4_t proj ) {
 	tri.v[0].p = imat4x4transform(modelview,tri.v[0].p);
 	tri.v[1].p = imat4x4transform(modelview,tri.v[1].p);
 	tri.v[2].p = imat4x4transform(modelview,tri.v[2].p);
-	
+
 	// Project
-	tri.v[0].p = imat4x4transform(proj,tri.v[0].p);	
+	tri.v[0].p = imat4x4transform(proj,tri.v[0].p);
 	tri.v[1].p = imat4x4transform(proj,tri.v[1].p);
 	tri.v[2].p = imat4x4transform(proj,tri.v[2].p);
-
-	// Winding test TODO (also, should consider doing that pre-transform)
 
 	// Perspective divide and viewport transform
 	tri.v[0].p = ivec4(Viewport(tri.v[0].p.x,tri.v[0].p.w,WIDTH),Viewport(tri.v[0].p.y,tri.v[0].p.w,HEIGHT),0,0);
 	tri.v[1].p = ivec4(Viewport(tri.v[1].p.x,tri.v[1].p.w,WIDTH),Viewport(tri.v[1].p.y,tri.v[1].p.w,HEIGHT),0,0);
 	tri.v[2].p = ivec4(Viewport(tri.v[2].p.x,tri.v[2].p.w,WIDTH),Viewport(tri.v[2].p.y,tri.v[2].p.w,HEIGHT),0,0);
-	
+
+	// Winding test
+	if(
+		imul(tri.v[1].p.x - tri.v[0].p.x, tri.v[2].p.y - tri.v[0].p.y) -
+		imul(tri.v[2].p.x - tri.v[0].p.x, tri.v[1].p.y - tri.v[0].p.y)
+		< 0
+	) {
+		return;
+	}
+
 	// Vertex sorting
 	vertex_t upperVertex;
 	vertex_t centerVertex;
@@ -123,7 +160,7 @@ void RasterizeTest(uint8_t* image) {
 	// deltas
 	int32_t upperCenter;
 	int32_t upperLower;
-	
+
 	// check if we have a triangle at all (Special case A)
 	if(
 		lowerDiff <= MIN_DIFF && lowerDiff >= -MIN_DIFF &&
@@ -176,13 +213,14 @@ void RasterizeTest(uint8_t* image) {
 	// calculate deltas
 	upperCenter = idiv(upperVertex.p.x - centerVertex.p.x, upperDiff);
 	upperLower = idiv(upperVertex.p.x - lowerVertex.p.x, lowerDiff);
-	
+
 	// upper triangle half
 	leftX = rightX = upperVertex.p.x;
 
 	leftColR = IntToFixed(upperVertex.c & (7 << 5))>>5;
 	leftColG = IntToFixed(upperVertex.c & (7 << 2))>>2;
 	leftColB = IntToFixed(upperVertex.c & (3));
+
 
 	if(upperCenter < upperLower) {
 		leftXd = upperCenter;
@@ -201,8 +239,15 @@ void RasterizeTest(uint8_t* image) {
 		leftColBd = imul(idiv(leftColB - (IntToFixed(lowerVertex.c & (3))), lowerDiff), D_CORRECTION);
 	}
 
-	scanlineMax = FixedToRoundedInt(centerVertex.p.y) - 1;
+	scanlineMax = FixedToRoundedInt(centerVertex.p.y);
 	for(scanline = FixedToRoundedInt(upperVertex.p.y); scanline < scanlineMax; scanline++ ) {
+		int32_t xMax = FixedToRoundedInt(rightX);
+		for(int32_t x = FixedToRoundedInt(leftX); x <= xMax; x++) {
+			image[x+scanline*WIDTH] = (FixedToRoundedInt(colR)<<5) | (FixedToRoundedInt(colG)<<2) | (FixedToRoundedInt(colB));
+			colR += colRdX;
+			colG += colGdX;
+			colB += colBdX;
+		}
 		leftX += leftXd;
 		rightX += rightXd;
 		leftColR += leftColRd;
@@ -211,13 +256,6 @@ void RasterizeTest(uint8_t* image) {
 		colG = leftColG;
 		leftColB += leftColBd;
 		colB = leftColB;
-		int32_t xMax = FixedToRoundedInt(rightX);
-		for(int32_t x = FixedToRoundedInt(leftX); x < xMax; x++) {
-			image[x+scanline*WIDTH] = (FixedToInt(colR)<<5) | (FixedToInt(colG)<<2) | (FixedToInt(colB));
-			colR += colRdX;
-			colG += colGdX;
-			colB += colBdX;
-		}
 	}
 
 	// Guard against special case C: flat lower edge
@@ -248,7 +286,14 @@ lower_half_render:
 
 	// lower triangle half
 	scanlineMax = FixedToRoundedInt(lowerVertex.p.y);
-	for(scanline = FixedToRoundedInt(centerVertex.p.y) - 1; scanline <= scanlineMax; scanline++ ) {
+	for(scanline = FixedToRoundedInt(centerVertex.p.y); scanline <= scanlineMax; scanline++ ) {
+		int32_t xMax = FixedToRoundedInt(rightX);
+		for(int32_t x = FixedToRoundedInt(leftX); x <= xMax; x++) {
+			image[x+scanline*WIDTH] = (FixedToRoundedInt(colR)<<5) | (FixedToRoundedInt(colG)<<2) | (FixedToRoundedInt(colB));
+			colR += colRdX;
+			colG += colGdX;
+			colB += colBdX;
+		}
 		leftX += leftXd;
 		rightX += rightXd;
 		leftColR += leftColRd;
@@ -257,12 +302,30 @@ lower_half_render:
 		colG = leftColG;
 		leftColB += leftColBd;
 		colB = leftColB;
-		int32_t xMax = FixedToRoundedInt(rightX);
-		for(int32_t x = FixedToRoundedInt(leftX); x < xMax; x++) {
-			image[x+scanline*WIDTH] = (FixedToInt(colR)<<5) | (FixedToInt(colG)<<2) | (FixedToInt(colB));
-			colR += colRdX;
-			colG += colGdX;
-			colB += colBdX;
-		}
 	}
+}
+
+void RasterizeTest(uint8_t* image) {
+	static int32_t rotcnt;
+	
+	// Projection matrix
+	imat4x4_t proj = imat4x4diagonalperspective(IntToFixed(45),idiv(IntToFixed(WIDTH),IntToFixed(HEIGHT)),128,IntToFixed(15));
+
+	// Modelview matrix
+	imat4x4_t modelview = imat4x4affinemul(imat4x4translate(ivec3(0,0,IntToFixed(-4))),imat4x4rotatez(rotcnt/(9)));
+	modelview = imat4x4affinemul(modelview,imat4x4rotatex(rotcnt/(3)));
+	rotcnt++;
+	
+	// For each triangle
+	triangle_t tri;
+	SetLEDs(1);
+	for(int32_t i = 0; i < 12; i++ ) {
+		SetLEDs(2);
+		tri.v[0] = cubeVertices[cubeFaces[i].v[0]];
+		tri.v[1] = cubeVertices[cubeFaces[i].v[1]];
+		tri.v[2] = cubeVertices[cubeFaces[i].v[2]];
+		SetLEDs(3);
+		RasterizeTriangle(image, tri, modelview, proj);
+	}
+	SetLEDs(4);
 }
