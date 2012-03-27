@@ -10,8 +10,7 @@
 #define WIDTH 320
 #define HEIGHT 200
 
-#define MIN_DIFF 8097
-#define D_CORRECTION 4100
+#define MIN_DIFF 0
 
 #define R(x) (F( ((x) & (7 << 5)) >> 5 ))
 #define G(x) (F( ((x) & (7 << 2)) >> 2 ))
@@ -124,10 +123,7 @@ void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat
 	int32_t upperLower;
 
 	// check if we have a triangle at all (Special case A)
-	if(
-		lowerDiff <= MIN_DIFF && lowerDiff >= -MIN_DIFF &&
-		upperDiff <= MIN_DIFF && upperDiff >= -MIN_DIFF
-	) {
+	if(lowerDiff == 0 && upperDiff == 0) {
 		return;
 	}
 
@@ -142,7 +138,7 @@ void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat
 	colBdX = idiv(imul(temp, (B(lowerVertex.c)-B(upperVertex.c))) + (B(upperVertex.c)-B(centerVertex.c)),width);
 
 	// guard against special case B: flat upper edge
-	if(upperDiff <= MIN_DIFF && upperDiff >= -MIN_DIFF ) {
+	if(upperDiff == 0 ) {
 
 		if(upperVertex.p.x < centerVertex.p.x) {
 			leftX = upperVertex.p.x;
@@ -188,17 +184,17 @@ void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat
 		leftXd = upperCenter;
 		rightXd = upperLower;
 
-		leftColRd = imul(idiv(leftColR - (IntToFixed(centerVertex.c & (7 << 5))>>5), upperDiff), D_CORRECTION);
-		leftColGd = imul(idiv(leftColG - (IntToFixed(centerVertex.c & (7 << 2))>>2), upperDiff), D_CORRECTION);
-		leftColBd = imul(idiv(leftColB - (IntToFixed(centerVertex.c & (3))), upperDiff), D_CORRECTION);
+		leftColRd = idiv(leftColR - (IntToFixed(centerVertex.c & (7 << 5))>>5), upperDiff);
+		leftColGd = idiv(leftColG - (IntToFixed(centerVertex.c & (7 << 2))>>2), upperDiff);
+		leftColBd = idiv(leftColB - (IntToFixed(centerVertex.c & (3))), upperDiff);
 	}
 	else {
 		leftXd = upperLower;
 		rightXd = upperCenter;
 
-		leftColRd = imul(idiv(leftColR - (IntToFixed(lowerVertex.c & (7 << 5))>>5), lowerDiff), D_CORRECTION);
-		leftColGd = imul(idiv(leftColG - (IntToFixed(lowerVertex.c & (7 << 2))>>2), lowerDiff), D_CORRECTION);
-		leftColBd = imul(idiv(leftColB - (IntToFixed(lowerVertex.c & (3))), lowerDiff), D_CORRECTION);
+		leftColRd = idiv(leftColR - (IntToFixed(lowerVertex.c & (7 << 5))>>5), lowerDiff);
+		leftColGd = idiv(leftColG - (IntToFixed(lowerVertex.c & (7 << 2))>>2), lowerDiff);
+		leftColBd = idiv(leftColB - (IntToFixed(lowerVertex.c & (3))), lowerDiff);
 	}
 
 	scanlineMax = FixedToRoundedInt(centerVertex.p.y);
@@ -222,7 +218,7 @@ void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat
 
 	// Guard against special case C: flat lower edge
 	int32_t centerDiff = centerVertex.p.y - lowerVertex.p.y;
-	if(centerDiff <= MIN_DIFF && centerDiff >= -MIN_DIFF ) {
+	if(centerDiff == 0) {
 		return;
 	}
 
@@ -248,7 +244,12 @@ lower_half_render:
 
 	// lower triangle half
 	scanlineMax = FixedToRoundedInt(lowerVertex.p.y);
-	for(scanline = FixedToRoundedInt(centerVertex.p.y); scanline <= scanlineMax; scanline++ ) {
+
+	colR = leftColR;
+	colG = leftColG;
+	colB = leftColB;
+	
+	for(scanline = FixedToRoundedInt(centerVertex.p.y); scanline < scanlineMax; scanline++ ) {
 		int32_t xMax = FixedToRoundedInt(rightX);
 		for(int32_t x = FixedToRoundedInt(leftX); x <= xMax; x++) {
 			image[x+scanline*WIDTH] = (FixedToRoundedInt(colR)<<5) | (FixedToRoundedInt(colG)<<2) | (FixedToRoundedInt(colB));
@@ -269,7 +270,6 @@ lower_half_render:
 
 void RasterizeTest(uint8_t* image) {
 	static int32_t rotcnt;
-
 
 	const vertex_t cubeVertices[] = {
 		{ V( -1, -1,  1 ), RGB(0,0,3) }, // 0: upper front left
@@ -313,8 +313,8 @@ void RasterizeTest(uint8_t* image) {
 	imat4x4_t proj = imat4x4diagonalperspective(IntToFixed(45),idiv(IntToFixed(WIDTH),IntToFixed(HEIGHT)),128,IntToFixed(15));
 
 	// Modelview matrix
-	imat4x4_t modelview = imat4x4affinemul(imat4x4translate(ivec3(0,0,IntToFixed(-4))),imat4x4rotatez(rotcnt/(9)));
-	modelview = imat4x4affinemul(modelview,imat4x4rotatex(rotcnt/(3)));
+	imat4x4_t modelview = imat4x4affinemul(imat4x4translate(ivec3(0,0,IntToFixed(-4))),imat4x4rotatex(rotcnt*8));
+	modelview = imat4x4affinemul(modelview,imat4x4rotatez(rotcnt * 4));
 	rotcnt++;
 	
 	// For each triangle
