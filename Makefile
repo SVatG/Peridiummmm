@@ -24,10 +24,13 @@ C_FILES =	Accelerometer.c \
 		Audio.c \
 		BitBin.c \
 		Button.c \
+		Epileptor.c \
 		LED.c \
 		Main.c \
 		Random.c \
+		Rotozoomer.c \
 		Sprites.c \
+		Starfield.c \
 		Startup.c \
 		System.c \
 		TestSong.c \
