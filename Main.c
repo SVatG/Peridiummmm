@@ -50,6 +50,8 @@ int main()
 	SetAudioVolume(0xaf);
 	PlayAudioWithCallback(AudioCallback,&song);
 
+	IntializeVGAScreenMode320x200((void *)0x20000000);
+
 	for(;;)
 	{
 		Starfield();
@@ -78,8 +80,6 @@ static void AudioCallback(void *context,int buffer)
 
 static void RotozoomHSYNCHandler();
 
-static uint32_t Line;
-static volatile uint32_t Frame;
 static volatile int32_t x0,y0,dx,dy;
 
 static uint32_t PackCoordinates(int32_t x,int32_t y)
@@ -94,9 +94,6 @@ static uint8_t linetexture[480];
 
 static void Rotozoom()
 {
-	Line=0;
-	Frame=0;
-
 	memset(linetexture,0,sizeof(linetexture));
 
 	uint8_t *texture=(uint8_t *)0x20000000;
@@ -134,29 +131,26 @@ static void Rotozoom()
 		}
 	}
 
-	InitializeVGAPort();
-	InitializeVGAHorizontalSync31kHz(RotozoomHSYNCHandler);
+	SetVGAHorizontalSync31kHz(RotozoomHSYNCHandler);
 
 	SetLEDs(0x5);
 
 	while(!UserButtonState())
 	{
-		uint32_t lastframe=Frame;
-		while(Frame==lastframe); // Wait for VBL
-		int t=Frame;
+		WaitVBL();
+		int t=VGAFrameCounter();
 
 		SetLEDs(1<<((t/3)&3));
 
-		int32_t angle=isin(t*9);
+		int32_t angle=isin(t*9)&1023;
 		int32_t scale=(icos(t*17)+Fix(2))/2;
-
-angle&=1023;
 
 		dx=imul(scale,icos(angle));
 		dy=imul(scale,isin(angle));
 
 		x0=-dx*320-dy*200;
 		y0=-(dy&0xffffff80)*320+dx*200;
+		Pos=PackCoordinates(x0,y0);
 		Delta=PackCoordinates(dx,dy);
 
 		for(int y=0;y<480;y++)
@@ -172,93 +166,60 @@ angle&=1023;
 
 static void RotozoomHSYNCHandler()
 {
-	switch(VGAHorizontalSyncInterruptType())
-	{
-		case VGAHorizontalSyncStartInterrupt:
-			LowerVGAHSYNCLine();
+	int line=HandleVGAHSync200();
+	if(line<0) return;
 
-			if(Line<400)
-			{
-				x0+=dy;
-				y0-=dx;
-				Pos=PackCoordinates(x0,y0);
-			}
-		break;
-
-		case VGAHorizontalSyncEndInterrupt:
-			RaiseVGAHSYNCLine();
-		break;
-
-		case VGAVideoStartInterrupt:
-			if(Line<400)
-			{
-				register uint32_t r0 __asm__("r0")=Pos;
-				register uint32_t r1 __asm__("r1")=Delta;
-				register uint32_t r2 __asm__("r2")=0xf81f;
-				register uint32_t r3 __asm__("r3")=0x20000000+(linetexture[Line]<<5);
-				register uint32_t r4 __asm__("r4")=0x40021015;
-				#define P \
-				"	adcs	r0,r1		\n" \
-				"	and		r5,r0,r2	\n" \
-				"	ldrb	r6,[r3,r5]	\n" \
-				"	strb	r6,[r4]		\n"
+	register uint32_t r0 __asm__("r0")=Pos;
+	register uint32_t r1 __asm__("r1")=Delta;
+	register uint32_t r2 __asm__("r2")=0xf81f;
+	register uint32_t r3 __asm__("r3")=0x20000000+(linetexture[line]<<5);
+	register uint32_t r4 __asm__("r4")=0x40021015;
+	#define P \
+	"	adcs	r0,r1		\n" \
+	"	and		r5,r0,r2	\n" \
+	"	ldrb	r6,[r3,r5]	\n" \
+	"	strb	r6,[r4]		\n"
 				
-				__asm__ volatile(
-				"	b		.start		\n"
-				"	.align 4	\n"
-				".start:	\n"
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	__asm__ volatile(
+	"	b		.start		\n"
+	"	.align 4	\n"
+	".start:	\n"
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
 				
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				#undef P
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	#undef P
 			
-				".end:	\n"
-				:
-				: "r" (r0), "r" (r1), "r" (r2), "r" (r3), "r" (r4)
-				:"r5","r6");
+	".end:	\n"
+	:
+	: "r" (r0), "r" (r1), "r" (r2), "r" (r3), "r" (r4)
+	:"r5","r6");
 
-				((uint8_t *)&GPIOE->ODR)[1]=0;
-			}
-			else if(Line==400)
-			{
-				Frame++;
-			}
-			else if(Line==412)
-			{
-				RaiseVGAVSYNCLine();
-			}
-			else if(Line==414)
-			{
-				LowerVGAVSYNCLine();
-			}
-			else if(Line==448)
-			{
-				Line=-1;
-			}
-			Line++;
-		break;
-	}
+	((uint8_t *)&GPIOE->ODR)[1]=0;
+
+	x0+=dy;
+	y0-=dx;
+	Pos=PackCoordinates(x0,y0);
 }
 
 
@@ -272,7 +233,7 @@ static void Starfield()
 	memset(framebuffer1,0,320*200);
 	memset(framebuffer2,0,320*200);
 
-	IntializeVGAScreenMode320x200(framebuffer1);
+	SetVGAScreenMode320x200(framebuffer1);
 
 	InitializeLEDFlow();
 
@@ -450,7 +411,7 @@ static void Epileptor()
 		replacements[palette[i]]=palette[(i+1)%sizeof(palette)];
 	}
 
-	IntializeVGAScreenMode320x200(framebuffer1);
+	SetVGAScreenMode320x200(framebuffer1);
 
 	Bitmap frame1,frame2;
 	InitializeBitmap(&frame1,320,200,320,framebuffer1);

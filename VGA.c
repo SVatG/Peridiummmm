@@ -4,15 +4,21 @@
 
 #include <stdlib.h>
 
-static void InitializeState(uint8_t *framebuffer,int pixelsperrow);
+static void InitializeState();
 static void HSYNCHandler240();
 static void HSYNCHandler200();
 static void HSYNCHandler175();
 
-static void InitializePixelDMA(int pixelclock);
+static void InitializePixelDMA(int pixelclock,int pixelsperrow);
 static void DMACompleteHandler();
 static inline void StartPixelDMA();
 static inline void StopPixelDMA();
+
+uint32_t VGALine;
+volatile uint32_t VGAFrame;
+uint32_t VGAFrameBufferAddress;
+uint32_t VGACurrentLineAddress;
+uint32_t VGAPixelsPerRow;
 
 static HBlankInterruptFunction *HBlankInterruptHandler;
 
@@ -20,8 +26,9 @@ void InitializeVGAScreenMode240(uint8_t *framebuffer,int pixelsperrow,int pixelc
 {
 	HBlankInterruptHandler=NULL;
 	InitializeVGAPort();
-	InitializeState(framebuffer,pixelsperrow);
-	InitializePixelDMA(pixelclock);
+	InitializeState();
+	InitializePixelDMA(pixelclock,pixelsperrow);
+	SetFrameBuffer(framebuffer);
 	InitializeVGAHorizontalSync31kHz(HSYNCHandler240);
 }
 
@@ -29,8 +36,9 @@ void InitializeVGAScreenMode200(uint8_t *framebuffer,int pixelsperrow,int pixelc
 {
 	HBlankInterruptHandler=NULL;
 	InitializeVGAPort();
-	InitializeState(framebuffer,pixelsperrow);
-	InitializePixelDMA(pixelclock);
+	InitializeState();
+	InitializePixelDMA(pixelclock,pixelsperrow);
+	SetFrameBuffer(framebuffer);
 	InitializeVGAHorizontalSync31kHz(HSYNCHandler200);
 }
 
@@ -38,10 +46,38 @@ void InitializeVGAScreenMode175(uint8_t *framebuffer,int pixelsperrow,int pixelc
 {
 	HBlankInterruptHandler=NULL;
 	InitializeVGAPort();
-	InitializeState(framebuffer,pixelsperrow);
-	InitializePixelDMA(pixelclock);
+	InitializeState();
+	InitializePixelDMA(pixelclock,pixelsperrow);
+	SetFrameBuffer(framebuffer);
 	InitializeVGAHorizontalSync31kHz(HSYNCHandler175);
 }
+
+void SetVGAScreenMode240(uint8_t *framebuffer,int pixelsperrow,int pixelclock)
+{
+	WaitVBL();
+	InitializePixelDMA(pixelclock,pixelsperrow);
+	SetFrameBuffer(framebuffer);
+	SetVGAHorizontalSync31kHz(HSYNCHandler240);
+}
+
+void SetVGAScreenMode200(uint8_t *framebuffer,int pixelsperrow,int pixelclock)
+{
+	WaitVBL();
+	InitializePixelDMA(pixelclock,pixelsperrow);
+	SetFrameBuffer(framebuffer);
+	SetVGAHorizontalSync31kHz(HSYNCHandler200);
+}
+
+void SetVGAScreenMode175(uint8_t *framebuffer,int pixelsperrow,int pixelclock)
+{
+	WaitVBL();
+	InitializePixelDMA(pixelclock,pixelsperrow);
+	SetFrameBuffer(framebuffer);
+	SetVGAHorizontalSync31kHz(HSYNCHandler175);
+}
+
+
+
 
 void InitializeVGAPort()
 {
@@ -76,13 +112,18 @@ void InitializeVGAHorizontalSync31kHz(InterruptHandler *handler)
 	TIM9->CCR1=633; // 168 MHz * 3.77 microseconds = 633.36 - sync pulse end
 	TIM9->CCR2=950; // 168 MHz * (3.77 + 1.89) microseconds = 950.88 - back porch end
 
+	SetVGAHorizontalSync31kHz(handler);
+
+	// Enable HSYNC timer.
+	TIM9->CR1|=TIM_CR1_CEN;
+}
+
+void SetVGAHorizontalSync31kHz(InterruptHandler *handler)
+{
 	// Enable HSYNC timer interrupt and set highest priority.
 	InstallInterruptHandler(TIM1_BRK_TIM9_IRQn,handler);
 	EnableInterrupt(TIM1_BRK_TIM9_IRQn);
 	SetInterruptPriority(TIM1_BRK_TIM9_IRQn,0);
-
-	// Enable HSYNC timer.
-	TIM9->CR1|=TIM_CR1_CEN;
 }
 
 void SetHBlankInterruptHandler(HBlankInterruptFunction *handler)
@@ -91,148 +132,45 @@ void SetHBlankInterruptHandler(HBlankInterruptFunction *handler)
 }
 
 
-static uint32_t Line;
-static volatile uint32_t Frame;
-static uint32_t FrameBufferAddress;
-static uint32_t CurrentLineAddress;
-static uint32_t PixelsPerRow;
+
 
 static void InitializeState(uint8_t *framebuffer,int pixelsperrow)
 {
-	// Initialize state.
-	Line=0;
-	Frame=0;
-	FrameBufferAddress=(uint32_t)framebuffer;
-	CurrentLineAddress=FrameBufferAddress;
-	PixelsPerRow=pixelsperrow;
+	VGALine=0xffffffff;
+	VGAFrame=0;
 }
 
 static void HSYNCHandler240()
 {
-	switch(VGAHorizontalSyncInterruptType())
-	{
-		case VGAHorizontalSyncStartInterrupt:
-			LowerVGAHSYNCLine();
-		break;
+	int line=HandleVGAHSync240();
+	if(line<0) return;
 
-		case VGAHorizontalSyncEndInterrupt:
-			RaiseVGAHSYNCLine();
-		break;
-
-		case VGAVideoStartInterrupt:
-			if(Line<480)
-			{
-				StartPixelDMA();
-				if(Line&1) CurrentLineAddress+=PixelsPerRow;
-			}
-			else if(Line==480)
-			{
-				Frame++;
-				// TODO: VBlank interrupt.
-			}
-			else if(Line==490)
-			{
-				LowerVGAVSYNCLine();
-			}
-			else if(Line==492)
-			{
-				RaiseVGAVSYNCLine();
-			}
-			else if(Line==524)
-			{
-				Line=-1;
-				CurrentLineAddress=FrameBufferAddress;
-			}
-			Line++;
-		break;
-	}
+	StartPixelDMA();
+	if(line&1) VGACurrentLineAddress+=VGAPixelsPerRow;
 }
 
 static void HSYNCHandler200()
 {
-	switch(VGAHorizontalSyncInterruptType())
-	{
-		case VGAHorizontalSyncStartInterrupt:
-			LowerVGAHSYNCLine();
-		break;
+	int line=HandleVGAHSync200();
+	if(line<0) return;
 
-		case VGAHorizontalSyncEndInterrupt:
-			RaiseVGAHSYNCLine();
-		break;
-
-		case VGAVideoStartInterrupt:
-			if(Line<400)
-			{
-				StartPixelDMA();
-				if(Line&1) CurrentLineAddress+=PixelsPerRow;
-			}
-			else if(Line==400)
-			{
-				Frame++;
-				// TODO: VBlank interrupt.
-			}
-			else if(Line==412)
-			{
-				RaiseVGAVSYNCLine();
-			}
-			else if(Line==414)
-			{
-				LowerVGAVSYNCLine();
-			}
-			else if(Line==448)
-			{
-				Line=-1;
-				CurrentLineAddress=FrameBufferAddress;
-			}
-			Line++;
-		break;
-	}
+	StartPixelDMA();
+	if(line&1) VGACurrentLineAddress+=VGAPixelsPerRow;
 }
 
 static void HSYNCHandler175()
 {
-	switch(VGAHorizontalSyncInterruptType())
-	{
-		case VGAHorizontalSyncStartInterrupt:
-			RaiseVGAHSYNCLine();
-		break;
+	int line=HandleVGAHSync175();
+	if(line<0) return;
 
-		case VGAHorizontalSyncEndInterrupt:
-			LowerVGAHSYNCLine();
-		break;
-
-		case VGAVideoStartInterrupt:
-			if(Line<350)
-			{
-				StartPixelDMA();
-				if(Line&1) CurrentLineAddress+=PixelsPerRow;
-			}
-			else if(Line==350)
-			{
-				Frame++;
-				// TODO: VBlank interrupt.
-			}
-			else if(Line==387)
-			{
-				LowerVGAVSYNCLine();
-			}
-			else if(Line==389)
-			{		
-				RaiseVGAVSYNCLine();
-			}
-			else if(Line==448)
-			{
-				Line=-1;
-				CurrentLineAddress=FrameBufferAddress;
-			}
-			Line++;
-		break;
-	}
+	StartPixelDMA();
+	if(line&1) VGACurrentLineAddress+=VGAPixelsPerRow;
 }
 
 
 
-static void InitializePixelDMA(int pixelclock)
+
+static void InitializePixelDMA(int pixelclock,int pixelsperrow)
 {
 	// Configure timer 8 as the pixel clock.
 	TIM8->CR1=TIM_CR1_ARPE;
@@ -246,6 +184,8 @@ static void InitializePixelDMA(int pixelclock)
 	InstallInterruptHandler(DMA2_Stream1_IRQn,DMACompleteHandler);
 	EnableInterrupt(DMA2_Stream1_IRQn);
 	SetInterruptPriority(DMA2_Stream1_IRQn,0);
+
+	VGAPixelsPerRow=pixelsperrow;
 }
 
 static void DMACompleteHandler()
@@ -255,6 +195,7 @@ static void DMACompleteHandler()
 	StopPixelDMA();
 
 	if(HBlankInterruptHandler) HBlankInterruptHandler();
+	// TODO: VBlank interrupt? At lower priority?
 }
 
 static inline void StartPixelDMA()
@@ -267,9 +208,9 @@ static inline void StartPixelDMA()
 	DMA_SxCR_MINC| // Increase memory address
 	(1*DMA_SxCR_DIR_0)| // Memory to peripheral
 	DMA_SxCR_TCIE; // Transfer complete interrupt
-	DMA2_Stream1->NDTR=PixelsPerRow;
+	DMA2_Stream1->NDTR=VGAPixelsPerRow;
 	DMA2_Stream1->PAR=((uint32_t)&GPIOE->ODR)+1;
-	DMA2_Stream1->M0AR=CurrentLineAddress;
+	DMA2_Stream1->M0AR=VGACurrentLineAddress;
 	DMA2_Stream1->CR|=DMA_SxCR_EN;
 
 	// Start pixel clock.
@@ -280,18 +221,5 @@ static inline void StopPixelDMA()
 {
 	TIM8->CR1&=~TIM_CR1_CEN; // Stop pixel clock.
 	DMA2_Stream1->CR=0; // Disable pixel DMA.
-}
-
-
-
-void WaitVBL()
-{
-	uint32_t currframe=Frame;
-	while(Frame==currframe);
-}
-
-void SetFrameBuffer(uint8_t *framebuffer)
-{
-	FrameBufferAddress=CurrentLineAddress=(uint32_t)framebuffer;
 }
 
