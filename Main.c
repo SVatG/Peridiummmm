@@ -47,6 +47,7 @@ int main()
 	InitializeBitBinSong(&song,BitBin22kTable,8,channels);
 
 	InitializeAudio(Audio22050HzSettings);
+	SetAudioVolume(0xaf);
 	PlayAudioWithCallback(AudioCallback,&song);
 
 	for(;;)
@@ -85,7 +86,7 @@ static uint32_t PackCoordinates(int32_t x,int32_t y)
 {
 	x&=0x3ffff;
 	y&=0x3ff80;
-	return (y>>(12-17+6))|(x<<20)|(x>>12);
+	return (y>>(12-16+5))|(x<<20)|(x>>12);
 }
 
 static volatile uint32_t Pos,Delta;
@@ -102,11 +103,11 @@ static void Rotozoom()
 
 	for(int i=0;i<32;i++)
 	{
-		for(int y=0;y<64;y++)
-		for(int x=0;x<64;x++)
+		for(int y=0;y<32;y++)
+		for(int x=0;x<32;x++)
 		{
-			int dx=(2*x+1)-64;
-			int dy=(2*y+1)-64;
+			int dx=2*(2*x+1)-64;
+			int dy=2*(2*y+1)-64;
 			int r=sqrti(dx*dx+dy*dy);
 
 			int red=0,green=0,blue=0;
@@ -128,8 +129,8 @@ static void Rotozoom()
 				}
 			}
 
-			int offset=(y<<(17-6))|(i<<6)|x;
-			if(offset<0x20000-0x200) texture[offset]=(red<<5)|(green<<2)|(blue);
+			int offset=(y<<(16-5))|(i<<5)|x;
+			texture[offset]=RawRGB(red,green,blue);
 		}
 	}
 
@@ -147,22 +148,22 @@ static void Rotozoom()
 		SetLEDs(1<<((t/3)&3));
 
 		int32_t angle=isin(t*9);
-		int32_t scale=icos(t*17)+Fix(2);
+		int32_t scale=(icos(t*17)+Fix(2))/2;
+
+angle&=1023;
 
 		dx=imul(scale,icos(angle));
 		dy=imul(scale,isin(angle));
 
-		//dx&=0xffffff80;
-		dy&=0xffffff80;
-
-		x0=-dx*320-dy*240;
-		y0=-dy*320+dx*240;
+		x0=-dx*320-dy*200;
+		y0=-(dy&0xffffff80)*320+dx*200;
 		Delta=PackCoordinates(dx,dy);
 
 		for(int y=0;y<480;y++)
 		{
 			int pos=icos(t*20);
-			linetexture[y]=(31*(isin(y*6+pos)+Fix(1))/8192)&31;
+			linetexture[y]=(32*(isin(y*6+pos)+Fix(1))/8192);
+			if(linetexture[y]>31) linetexture[y]=31;
 		}
 	}
 
@@ -176,9 +177,12 @@ static void RotozoomHSYNCHandler()
 		case VGAHorizontalSyncStartInterrupt:
 			LowerVGAHSYNCLine();
 
-			x0+=dy;
-			y0-=dx;
-			Pos=PackCoordinates(x0,y0);
+			if(Line<400)
+			{
+				x0+=dy;
+				y0-=dx;
+				Pos=PackCoordinates(x0,y0);
+			}
 		break;
 
 		case VGAHorizontalSyncEndInterrupt:
@@ -186,12 +190,12 @@ static void RotozoomHSYNCHandler()
 		break;
 
 		case VGAVideoStartInterrupt:
-			if(Line<480)
+			if(Line<400)
 			{
 				register uint32_t r0 __asm__("r0")=Pos;
 				register uint32_t r1 __asm__("r1")=Delta;
-				register uint32_t r2 __asm__("r2")=0x1f83f;
-				register uint32_t r3 __asm__("r3")=0x20000000+(linetexture[Line]<<6);
+				register uint32_t r2 __asm__("r2")=0xf81f;
+				register uint32_t r3 __asm__("r3")=0x20000000+(linetexture[Line]<<5);
 				register uint32_t r4 __asm__("r4")=0x40021015;
 				#define P \
 				"	adcs	r0,r1		\n" \
@@ -236,19 +240,19 @@ static void RotozoomHSYNCHandler()
 
 				((uint8_t *)&GPIOE->ODR)[1]=0;
 			}
-			else if(Line==480)
+			else if(Line==400)
 			{
 				Frame++;
 			}
-			else if(Line==490)
-			{
-				LowerVGAVSYNCLine();
-			}
-			else if(Line==492)
+			else if(Line==412)
 			{
 				RaiseVGAVSYNCLine();
 			}
-			else if(Line==524)
+			else if(Line==414)
+			{
+				LowerVGAVSYNCLine();
+			}
+			else if(Line==448)
 			{
 				Line=-1;
 			}
