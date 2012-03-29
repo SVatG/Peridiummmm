@@ -13,6 +13,7 @@
 #include "Rotozoomer.h"
 #include "Starfield.h"
 #include "Epileptor.h"
+#include "Scroller.h"
 
 static void AudioCallback(void *context,int buffer);
 int16_t *buffers[2]={ (int16_t *)0x2001fa00,(int16_t *)0x2001fc00 };
@@ -38,6 +39,7 @@ int main()
 
 	for(;;)
 	{
+		Scroller("Look out honey coz I'm using technology, ain't got time to make no apology");
 		Starfield();
 		Rotozoom();
 		Epileptor();

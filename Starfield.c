@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <string.h>
 
+
 static uint32_t sqrti(uint32_t n);
 
 void Starfield()
