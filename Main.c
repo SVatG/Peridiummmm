@@ -15,6 +15,9 @@
 #include "Graphics/Bitmap.h"
 #include "Graphics/Drawing.h"
 
+#include "ryx/font.h"
+#include "ryx/font_enri.h"
+
 #include <arm_math.h>
 
 static void Rotozoom();
@@ -22,6 +25,7 @@ static void Starfield();
 static void InitializeLEDFlow();
 static void RunLEDFlow();
 static void Epileptor();
+static void Fonttest();
 
 static uint32_t sqrti(uint32_t n);
 
@@ -54,6 +58,7 @@ int main()
 
 	for(;;)
 	{
+        Fonttest();
 		Starfield();
 		Rotozoom();
 		Epileptor();
@@ -301,6 +306,47 @@ static void Starfield()
 	while(UserButtonState());
 }
 
+
+static void Fonttest(){
+	uint8_t *framebuffer1=(uint8_t *)0x20000000;
+	uint8_t *framebuffer2=(uint8_t *)0x20010000;
+	memset(framebuffer1,0,320*200);
+	memset(framebuffer2,0,320*200);
+
+	SetVGAScreenMode320x200(framebuffer1);
+
+	InitializeLEDFlow();
+
+    glyph_t glyph = font_enri_glyph[50];
+
+	Bitmap frame1,frame2;
+	InitializeBitmap(&frame1,320,200,320,framebuffer1);
+	InitializeBitmap(&frame2,320,200,320,framebuffer2);
+
+	int frame=0;
+
+	while(!UserButtonState())
+	{
+		WaitVBL();
+
+		RunLEDFlow();
+
+		Bitmap *currframe;
+		if(frame&1) { currframe=&frame2; SetFrameBuffer(framebuffer1); }
+		else { currframe=&frame1; SetFrameBuffer(framebuffer2); }
+
+		ClearBitmap(currframe);
+
+        point_t p={40,10};
+        render_text(currframe, "foobar bazquuux",p, 30, font_enri_glyph);
+
+
+
+		frame++;
+	}
+
+	while(UserButtonState());
+}
 
 
 

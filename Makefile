@@ -39,7 +39,9 @@ C_FILES =	Accelerometer.c \
 		Graphics/DrawingPixels.c \
 		Graphics/DrawingRectangles.c \
 		Graphics/DrawingRLEBitmaps.c \
-		Graphics/DrawingStraightLines.c
+		Graphics/DrawingStraightLines.c \
+		ryx/font.c \
+		ryx/bezier.c
 			
 S_FILES = 
 
@@ -59,7 +61,8 @@ upload: $(NAME).bin
 	openocd -f interface/stlink-v2.cfg -f target/stm32f4x_stlink.cfg \
 	-c init -c "reset halt" -c "stm32f2x mass_erase 0" \
 	-c "flash write_bank 0 $(NAME).bin 0" \
-	-c "reset run" -c shutdown
+	-c "reset run" -c shutdown  \
+	-s /home/paul/prog/demo/openocd-build/share/openocd/scripts
 
 debug:
 	arm-eabi-gdb $(NAME).elf \
