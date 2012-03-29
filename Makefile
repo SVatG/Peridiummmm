@@ -24,21 +24,28 @@ C_FILES =	Accelerometer.c \
 		Audio.c \
 		BitBin.c \
 		Button.c \
+		Epileptor.c \
 		LED.c \
 		Main.c \
+		OLFont.c \
 		Random.c \
+		Rotozoomer.c \
+		Scroller.c \
 		Sprites.c \
+		Starfield.c \
 		Startup.c \
 		System.c \
 		TestSong.c \
 		VGA.c \
 		Graphics/Bitmap.c \
+		Graphics/ColourFont.c \
 		Graphics/DrawingBitmaps.c \
 		Graphics/DrawingLines.c \
 		Graphics/DrawingPixels.c \
 		Graphics/DrawingRectangles.c \
 		Graphics/DrawingRLEBitmaps.c \
 		Graphics/DrawingStraightLines.c \
+		Graphics/Font.c \
 		VectorLibrary/Integer.c \
 		VectorLibrary/VectorFixed.c \
 		VectorLibrary/MatrixFixed.c \

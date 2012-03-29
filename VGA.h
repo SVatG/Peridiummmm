@@ -8,27 +8,40 @@
 
 typedef void HBlankInterruptFunction(void);
 
+extern uint32_t VGALine;
+extern volatile uint32_t VGAFrame;
+extern uint32_t VGAFrameBufferAddress;
+extern uint32_t VGACurrentLineAddress;
+extern uint32_t VGAPixelsPerRow;
+
 void InitializeVGAScreenMode240(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
 void InitializeVGAScreenMode200(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
 void InitializeVGAScreenMode175(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
 
-void WaitVBL();
-void SetFrameBuffer(uint8_t *framebuffer); // Only safe to call in the vertical blank!
+static inline void IntializeVGAScreenMode320x240(uint8_t *framebuffer) { InitializeVGAScreenMode240(framebuffer,320,13); }
+static inline void IntializeVGAScreenMode320x200(uint8_t *framebuffer) { InitializeVGAScreenMode200(framebuffer,320,13); }
+static inline void IntializeVGAScreenMode320x175(uint8_t *framebuffer) { InitializeVGAScreenMode175(framebuffer,320,13); }
 
-static inline void IntializeVGAScreenMode320x240(uint8_t *framebuffer)
+void SetVGAScreenMode240(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
+void SetVGAScreenMode200(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
+void SetVGAScreenMode175(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
+
+static inline void SetVGAScreenMode320x240(uint8_t *framebuffer) { SetVGAScreenMode240(framebuffer,320,13); }
+static inline void SetVGAScreenMode320x200(uint8_t *framebuffer) { SetVGAScreenMode200(framebuffer,320,13); }
+static inline void SetVGAScreenMode320x175(uint8_t *framebuffer) { SetVGAScreenMode175(framebuffer,320,13); }
+
+static inline void WaitVBL()
 {
-	InitializeVGAScreenMode240(framebuffer,320,13);
+	uint32_t currframe=VGAFrame;
+	while(VGAFrame==currframe);
 }
 
-static inline void IntializeVGAScreenMode320x200(uint8_t *framebuffer)
+static inline void SetFrameBuffer(uint8_t *framebuffer)
 {
-	InitializeVGAScreenMode200(framebuffer,320,13);
+	VGAFrameBufferAddress=VGACurrentLineAddress=(uint32_t)framebuffer;
 }
 
-static inline void IntializeVGAScreenMode320x175(uint8_t *framebuffer)
-{
-	InitializeVGAScreenMode175(framebuffer,320,13);
-}
+static inline uint32_t VGAFrameCounter() { return VGAFrame; }
 
 
 
@@ -36,21 +49,120 @@ static inline void IntializeVGAScreenMode320x175(uint8_t *framebuffer)
 
 void InitializeVGAPort();
 void InitializeVGAHorizontalSync31kHz(InterruptHandler *handler);
+void SetVGAHorizontalSync31kHz(InterruptHandler *handler);
 
-#define VGAHorizontalSyncStartInterrupt 1 // Overflow interrupt
-#define VGAHorizontalSyncEndInterrupt 2 // Output compare 1 interrupt
-#define VGAVideoStartInterrupt 4 // Output compare 2 interrupt
+#define VGAHorizontalSyncStartInterruptFlag 1 // Overflow interrupt
+#define VGAHorizontalSyncEndInterruptFlag 2 // Output compare 1 interrupt
+#define VGAVideoStartInterruptFlag 4 // Output compare 2 interrupt
 
-static inline uint32_t VGAHorizontalSyncInterruptType()
+static inline void RaiseVGAHSyncLine() { GPIOB->BSRRL=(1<<11); }
+static inline void LowerVGAHSyncLine() { GPIOB->BSRRH=(1<<11); }
+static inline void RaiseVGAVSyncLine() { GPIOB->BSRRL=(1<<12); }
+static inline void LowerVGAVSyncLine() { GPIOB->BSRRH=(1<<12); }
+
+static inline int HandleVGAHSync240()
 {
 	uint32_t sr=TIM9->SR;
 	TIM9->SR=0;
-	return sr;
+
+	if(sr==VGAHorizontalSyncStartInterruptFlag) LowerVGAHSyncLine();
+	else if(sr==VGAHorizontalSyncEndInterruptFlag) RaiseVGAHSyncLine();
+	else // if(VGAVideoStartInterruptFlag)
+	{
+		VGALine++;
+		if(VGALine<480)
+		{
+			return VGALine;
+		}
+		else if(VGALine==480)
+		{
+			VGAFrame++;
+		}
+		else if(VGALine==490)
+		{
+			LowerVGAVSyncLine();
+		}
+		else if(VGALine==492)
+		{
+			RaiseVGAVSyncLine();
+		}
+		else if(VGALine==524)
+		{
+			VGALine=0;
+			VGACurrentLineAddress=VGAFrameBufferAddress;
+		}
+	}
+	return -1;
 }
 
-static inline void RaiseVGAHSYNCLine() { GPIOB->BSRRL=(1<<11); }
-static inline void LowerVGAHSYNCLine() { GPIOB->BSRRH=(1<<11); }
-static inline void RaiseVGAVSYNCLine() { GPIOB->BSRRL=(1<<12); }
-static inline void LowerVGAVSYNCLine() { GPIOB->BSRRH=(1<<12); }
+static inline int HandleVGAHSync200()
+{
+	uint32_t sr=TIM9->SR;
+	TIM9->SR=0;
+
+	if(sr==VGAHorizontalSyncStartInterruptFlag) LowerVGAHSyncLine();
+	else if(sr==VGAHorizontalSyncEndInterruptFlag) RaiseVGAHSyncLine();
+	else // if(VGAVideoStartInterruptFlag)
+	{
+		VGALine++;
+		if(VGALine<400)
+		{
+			return VGALine;
+		}
+		else if(VGALine==400)
+		{
+			VGAFrame++;
+		}
+		else if(VGALine==412)
+		{
+			RaiseVGAVSyncLine();
+		}
+		else if(VGALine==414)
+		{
+			LowerVGAVSyncLine();
+		}
+		else if(VGALine==448)
+		{
+			VGALine=0;
+			VGACurrentLineAddress=VGAFrameBufferAddress;
+		}
+	}
+	return -1;
+}
+
+static inline int HandleVGAHSync175()
+{
+	uint32_t sr=TIM9->SR;
+	TIM9->SR=0;
+
+	if(sr==VGAHorizontalSyncStartInterruptFlag) RaiseVGAHSyncLine();
+	else if(sr==VGAHorizontalSyncEndInterruptFlag) LowerVGAHSyncLine();
+	else // if(VGAVideoStartInterruptFlag)
+	{
+		VGALine++;
+		if(VGALine<350)
+		{
+			return VGALine;
+		}
+		else if(VGALine==350)
+		{
+			VGAFrame++;
+		}
+		else if(VGALine==387)
+		{
+			LowerVGAVSyncLine();
+		}
+		else if(VGALine==389)
+		{
+			RaiseVGAVSyncLine();
+		}
+		else if(VGALine==448)
+		{
+			VGALine=0;
+			VGACurrentLineAddress=VGAFrameBufferAddress;
+		}
+	}
+	return -1;
+}
 
 #endif

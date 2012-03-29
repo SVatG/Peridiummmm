@@ -9,7 +9,12 @@
 #include "VectorLibrary/VectorFixed.h"
 #include "VectorLibrary/MatrixFixed.h"
 
+#include "VGA.h"
 #include "LED.h"
+#include "Button.h"
+#include "Utils.h"
+#include "Graphics/Bitmap.h"
+#include "Graphics/Drawing.h"
 
 #define WIDTH 320
 #define HEIGHT 200
@@ -18,7 +23,7 @@
 #define G(x) (F( ((x) & (7 << 2)) >> 2 ))
 #define B(x) (F( (x) & (3) ))
 
-#define RGB(r,g,b) ((r)<<5 | (g)<<2 | (b))
+#define RastRGB(r,g,b) ((r)<<5 | (g)<<2 | (b))
 
 #define V(x,y,z) {F(x),F(y),F(z),F(1)}
 
@@ -326,7 +331,7 @@ void RasterizeTest(uint8_t* image) {
 		if(dotstars[i].x < 0) dotstars[i].x = IntToFixed(319);
 		dotstars[i].y+=2;
 		if(dotstars[i].y >= 200) dotstars[i].y = 0;
-		image[FixedToInt(dotstars[i].x) + dotstars[i].y*WIDTH] = RGB(7,7,3);
+		image[FixedToInt(dotstars[i].x) + dotstars[i].y*WIDTH] = RastRGB(7,7,3);
 	}
 	
 	// Projection matrix
@@ -359,7 +364,7 @@ void RasterizeTest(uint8_t* image) {
 		int32_t r = dist > 6 ? dist - 7 : 0;
 		r = r > 6 ? 6 : r;
 		int32_t g = dist > 6 ? 6 : dist;
-		transformedVertices[i].c = RGB(r,g,2);
+		transformedVertices[i].c = RastRGB(r,g,2);
 	}
 	for(int32_t i = 0; i < numVertices_rad; i++) {
 		transformVertex.p = imat4x4transform(modelview_rad,ivec4(vertices_rad[i].p.x,vertices_rad[i].p.y,vertices_rad[i].p.z,F(1)));
@@ -378,7 +383,7 @@ void RasterizeTest(uint8_t* image) {
 		int32_t g = dist > 6 ? dist - 7 : 0;
 		g = g > 6 ? 6 : g;
 		int32_t r = dist > 6 ? 6 : dist;
-		transformedVertices[i+numVertices].c = RGB(r,g,2);
+		transformedVertices[i+numVertices].c = RastRGB(r,g,2);
 	}
 
 
@@ -396,4 +401,48 @@ void RasterizeTest(uint8_t* image) {
 	}
 	
 	rotcnt++;
+}
+
+void Rasterize() {
+	uint8_t *framebuffer1=(uint8_t *)0x20000000;
+	uint8_t *framebuffer2=(uint8_t *)0x20010000;
+	memset(framebuffer1,0,320*200);
+	memset(framebuffer2,0,320*200);
+	IntializeVGAScreenMode320x200(framebuffer1);
+
+	Bitmap frame1,frame2;
+	InitializeBitmap(&frame1,320,200,320,framebuffer1);
+	InitializeBitmap(&frame2,320,200,320,framebuffer2);
+
+	int t=0;
+
+	RasterizeInit();
+
+	while(!UserButtonState())
+	{
+		WaitVBL();
+
+		Bitmap *currframe;
+		if(t&1)
+		{
+			SetFrameBuffer(framebuffer1);
+			ClearBitmap(&frame2);
+			currframe=&frame2;
+		}
+		else
+		{
+			SetFrameBuffer(framebuffer2);
+			ClearBitmap(&frame1);
+			currframe=&frame1;
+		}
+
+		SetLEDs(0);
+
+		uint8_t* pixels = currframe->pixels;
+		RasterizeTest(pixels);
+
+		t++;
+	}
+
+	while(UserButtonState());
 }

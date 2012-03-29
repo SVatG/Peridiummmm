@@ -3,5 +3,6 @@
 
 void RasterizeTest(uint8_t* image);
 void RasterizeInit();
+void Rasterize();
 
 #endif
