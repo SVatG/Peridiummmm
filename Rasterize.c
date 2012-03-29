@@ -2,6 +2,9 @@
  * Rasterizer
  */
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "VectorLibrary/VectorFixed.h"
 #include "VectorLibrary/MatrixFixed.h"
 
@@ -28,28 +31,22 @@ typedef struct {
 } vertex_t;
 
 typedef struct {
-	vertex_t v[3];
+	ivec3_t p;
+	uint32_t c;
+} ss_vertex_t;
+
+typedef struct {
+	ss_vertex_t v[3];
 } triangle_t;
 
 typedef struct {
 	int32_t v[3];
 } index_triangle_t;
 
+#include "rad.h"
+#include "spikes.h"
+
 void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat4x4_t proj ) {
-	tri.v[0].p = imat4x4transform(modelview,tri.v[0].p);
-	tri.v[1].p = imat4x4transform(modelview,tri.v[1].p);
-	tri.v[2].p = imat4x4transform(modelview,tri.v[2].p);
-
-	// Project
-	tri.v[0].p = imat4x4transform(proj,tri.v[0].p);
-	tri.v[1].p = imat4x4transform(proj,tri.v[1].p);
-	tri.v[2].p = imat4x4transform(proj,tri.v[2].p);
-
-	// Perspective divide and viewport transform
-	tri.v[0].p = ivec4(Viewport(tri.v[0].p.x,tri.v[0].p.w,WIDTH),Viewport(tri.v[0].p.y,tri.v[0].p.w,HEIGHT),0,0);
-	tri.v[1].p = ivec4(Viewport(tri.v[1].p.x,tri.v[1].p.w,WIDTH),Viewport(tri.v[1].p.y,tri.v[1].p.w,HEIGHT),0,0);
-	tri.v[2].p = ivec4(Viewport(tri.v[2].p.x,tri.v[2].p.w,WIDTH),Viewport(tri.v[2].p.y,tri.v[2].p.w,HEIGHT),0,0);
-
 	// Winding test
 	if(
 		imul(tri.v[1].p.x - tri.v[0].p.x, tri.v[2].p.y - tri.v[0].p.y) -
@@ -60,9 +57,9 @@ void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat
 	}
 
 	// Vertex sorting
-	vertex_t upperVertex;
-	vertex_t centerVertex;
-	vertex_t lowerVertex;
+	ss_vertex_t upperVertex;
+	ss_vertex_t centerVertex;
+	ss_vertex_t lowerVertex;
 
 	if(tri.v[0].p.y < tri.v[1].p.y) {
 		upperVertex = tri.v[0];
@@ -268,65 +265,80 @@ lower_half_render:
 	}
 }
 
+ss_vertex_t transformedVertices[numVertices+numVertices_rad];
+index_triangle_t sortedTriangles[numFaces+numFaces_rad];
+
+static int triAvgDepthCompare(const void *p1, const void *p2) {
+	index_triangle_t* t1 = (index_triangle_t*)p1;
+	index_triangle_t* t2 = (index_triangle_t*)p2;
+	return(
+		transformedVertices[t2->v[0]].p.z +
+		transformedVertices[t2->v[1]].p.z +
+		transformedVertices[t2->v[2]].p.z -
+		transformedVertices[t1->v[0]].p.z -
+		transformedVertices[t1->v[1]].p.z -
+		transformedVertices[t1->v[2]].p.z
+	);
+}
+
 void RasterizeTest(uint8_t* image) {
 	static int32_t rotcnt;
-
-	const vertex_t cubeVertices[] = {
-		{ V( -1, -1,  1 ), RGB(0,0,3) }, // 0: upper front left
-		{ V(  1, -1,  1 ), RGB(7,0,3) }, // 1: upper front right
-		{ V(  1,  1,  1 ), RGB(7,7,3) }, // 2: lower front right
-		{ V( -1,  1,  1 ), RGB(0,7,3) }, // 3: lower front left
-		{ V( -1, -1, -1 ), RGB(0,0,0) }, // 4: upper back  left
-		{ V(  1, -1, -1 ), RGB(7,0,0) }, // 5: upper back  right
-		{ V(  1,  1, -1 ), RGB(7,7,0) }, // 6: lower back  right
-		{ V( -1,  1, -1 ), RGB(0,7,0) }  // 7: lower back  left
-	};
-
-	const int32_t numFaces = 12;
-	const index_triangle_t cubeFaces[] = {
-		// Front
-		{0, 1, 2},
-		{0, 2, 3},
-
-		// Back
-		{4, 7, 6},
-		{4, 6, 5},
-
-		// Right
-		{1, 5, 6},
-		{1, 6, 2},
-
-		// Left
-		{4, 0, 3},
-		{4, 3, 7},
-
-		// Top
-		{4, 5, 1},
-		{4, 1, 0},
-
-		// Bottom
-		{7, 2, 6},
-		{7, 3, 2}
-	};
 	
 	// Projection matrix
-	imat4x4_t proj = imat4x4diagonalperspective(IntToFixed(45),idiv(IntToFixed(WIDTH),IntToFixed(HEIGHT)),128,IntToFixed(15));
-
+	imat4x4_t proj = imat4x4diagonalperspective(IntToFixed(45),idiv(IntToFixed(WIDTH),IntToFixed(HEIGHT)),4096,IntToFixed(60));
+	
 	// Modelview matrix
-	imat4x4_t modelview = imat4x4affinemul(imat4x4translate(ivec3(0,0,IntToFixed(-4))),imat4x4rotatex(rotcnt*8));
-	modelview = imat4x4affinemul(modelview,imat4x4rotatez(rotcnt * 4));
-	rotcnt++;
+	imat4x4_t modelview = imat4x4affinemul(imat4x4translate(ivec3(IntToFixed(0),IntToFixed(0),IntToFixed(-30))),imat4x4rotatex(rotcnt*24));
+	modelview = imat4x4affinemul(modelview,imat4x4rotatez(rotcnt * 12));
+
+	imat4x4_t modelview_rad = imat4x4affinemul(imat4x4translate(ivec3(IntToFixed(0),IntToFixed(0),IntToFixed(-30))),imat4x4rotatey(rotcnt*16));
+	modelview_rad = imat4x4affinemul(modelview_rad,imat4x4rotatez(rotcnt * 22));
+	
+	// Transform
+	vertex_t transformVertex;
+	for(int32_t i = 0; i < numVertices; i++) {
+		transformVertex.p = imat4x4transform(modelview,vertices[i].p);
+
+		// Project
+		transformVertex.p = imat4x4transform(proj,transformVertex.p);
+
+		// Perspective divide and viewport transform
+		transformedVertices[i].p = ivec3(
+			Viewport(transformVertex.p.x,transformVertex.p.w,WIDTH),
+			Viewport(transformVertex.p.y,transformVertex.p.w,HEIGHT),
+			transformVertex.p.z
+		);
+		transformedVertices[i].c = vertices[i].c;
+	}
+	for(int32_t i = 0; i < numVertices_rad; i++) {
+		transformVertex.p = imat4x4transform(modelview_rad,vertices_rad[i].p);
+
+		// Project
+		transformVertex.p = imat4x4transform(proj,transformVertex.p);
+
+		// Perspective divide and viewport transform
+		transformedVertices[i+numVertices].p = ivec3(
+			Viewport(transformVertex.p.x,transformVertex.p.w,WIDTH),
+			Viewport(transformVertex.p.y,transformVertex.p.w,HEIGHT),
+			transformVertex.p.z
+		);
+		transformedVertices[i+numVertices].c = vertices_rad[i].c;
+	}
+
+
+	// Depth sort
+	memcpy(sortedTriangles,faces,sizeof(index_triangle_t)*numFaces);
+	memcpy(sortedTriangles+numFaces,faces_rad,sizeof(index_triangle_t)*numFaces_rad);
+	qsort(sortedTriangles,numFaces+numFaces_rad,sizeof(index_triangle_t),&triAvgDepthCompare);
 	
 	// For each triangle
 	triangle_t tri;
-	SetLEDs(1);
-	for(int32_t i = 0; i < 12; i++ ) {
-		SetLEDs(2);
-		tri.v[0] = cubeVertices[cubeFaces[i].v[0]];
-		tri.v[1] = cubeVertices[cubeFaces[i].v[1]];
-		tri.v[2] = cubeVertices[cubeFaces[i].v[2]];
-		SetLEDs(3);
+	for(int32_t i = 0; i < numFaces + numFaces_rad; i++ ) {
+		tri.v[0] = transformedVertices[sortedTriangles[i].v[0]];
+		tri.v[1] = transformedVertices[sortedTriangles[i].v[1]];
+		tri.v[2] = transformedVertices[sortedTriangles[i].v[2]];
 		RasterizeTriangle(image, tri, modelview, proj);
 	}
-	SetLEDs(4);
+	
+	rotcnt++;
 }
