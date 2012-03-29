@@ -6,9 +6,11 @@
 #include "Accelerometer.h"
 #include "VGA.h"
 #include "RCC.h"
+#include "Audio.h"
 #include "Sprites.h"
 #include "Random.h"
 #include "Utils.h"
+#include "BitBin.h"
 
 #include "Rasterize.h"
 
@@ -25,20 +27,29 @@ static void Epileptor();
 static void Rasterbars();
 static void Rasterize();
 
+
+static void AudioCallback(void *context,int buffer);
+int16_t *buffers[2]={ (int16_t *)0x2001fa00,(int16_t *)0x2001fc00 };
+extern BitBinNote *channels[8];
+
+
 int main()
 {
 	InitializeLEDs();
-	SetLEDs(0x01);
 
 	InitializeSystem();
-
-	SetLEDs(0x03);
 
 	SysTick_Config(HCLKFrequency()/100);
 
 	InitializeLEDs();
 	InitializeUserButton();
 	InitializeAccelerometer();
+
+	BitBinSong song;
+	InitializeBitBinSong(&song,BitBin22kTable,8,channels);
+
+	InitializeAudio(Audio22050HzSettings);
+	PlayAudioWithCallback(AudioCallback,&song);
 
 	for(;;)
 	{
@@ -48,6 +59,21 @@ int main()
 		Rotozoom();
 		Epileptor();
 	}
+}
+
+static void AudioCallback(void *context,int buffer)
+{
+	BitBinSong *song=context;
+
+	int16_t *samples=buffers[buffer];
+	RenderBitBinSamples(song,128,samples);
+	for(int i=128;i>=0;i--)
+	{
+		samples[2*i+0]=samples[i];
+		samples[2*i+1]=samples[i];
+	}
+
+	ProvideAudioBuffer(samples,256);
 }
 
 
@@ -130,11 +156,8 @@ static void Rotozoom()
 		dx=imul(scale,icos(angle));
 		dy=imul(scale,isin(angle));
 
-		//dx&=0xffffff80;
-		dy&=0xffffff80;
-
 		x0=-dx*320-dy*240;
-		y0=-dy*320+dx*240;
+		y0=-(dy&0xffffff80)*320+dx*240;
 		Delta=PackCoordinates(dx,dy);
 
 		for(int y=0;y<480;y++)
@@ -154,9 +177,12 @@ static void RotozoomHSYNCHandler()
 		case VGAHorizontalSyncStartInterrupt:
 			LowerVGAHSYNCLine();
 
-			x0+=dy;
-			y0-=dx;
-			Pos=PackCoordinates(x0,y0);
+			if(Line<480)
+			{
+				x0+=dy;
+				y0-=dx;
+				Pos=PackCoordinates(x0,y0);
+			}
 		break;
 
 		case VGAHorizontalSyncEndInterrupt:

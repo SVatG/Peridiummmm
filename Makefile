@@ -5,46 +5,45 @@ LD = arm-eabi-gcc
 OBJCOPY = arm-eabi-objcopy
 
 DEFINES =	-DARM_MATH_CM4 \
-			-DRGB8Pixels
+		-DRGB8Pixels
 
 C_OPTS =	-std=c99 \
-			-mthumb \
-			-mcpu=cortex-m4 \
-			-ILibraries/CMSIS/Include \
-			-g \
-			-Werror \
-			-O3
+		-mthumb \
+		-mcpu=cortex-m4 \
+		-ILibraries/CMSIS/Include \
+		-g \
+		-Werror \
+		-O3
 
 LIBS =	-lm
 
 SOURCE_DIR = .
 BUILD_DIR = Build
 
-#			Utilities/STM32F4-Discovery/stm32f4_discovery.c \
-#			Utilities/STM32F4-Discovery/stm32f4_discovery_lis302dl.c \
-#			Utilities/STM32F4-Discovery/stm32f4_discovery_audio_codec.c
-
 C_FILES =	Accelerometer.c \
-			Button.c \
-			LED.c \
-			Main.c \
-			Random.c \
-			Sprites.c \
-			Startup.c \
-			System.c \
-			VGA.c \
-			Graphics/Bitmap.c \
-			Graphics/DrawingBitmaps.c \
-			Graphics/DrawingLines.c \
-			Graphics/DrawingPixels.c \
-			Graphics/DrawingRectangles.c \
-			Graphics/DrawingRLEBitmaps.c \
-			Graphics/DrawingStraightLines.c \
-			VectorLibrary/Integer.c \
-			VectorLibrary/VectorFixed.c \
-			VectorLibrary/MatrixFixed.c \
-			VectorLibrary/QuaternionFixed.c \
-			Rasterize.c
+		Audio.c \
+		BitBin.c \
+		Button.c \
+		LED.c \
+		Main.c \
+		Random.c \
+		Sprites.c \
+		Startup.c \
+		System.c \
+		TestSong.c \
+		VGA.c \
+		Graphics/Bitmap.c \
+		Graphics/DrawingBitmaps.c \
+		Graphics/DrawingLines.c \
+		Graphics/DrawingPixels.c \
+		Graphics/DrawingRectangles.c \
+		Graphics/DrawingRLEBitmaps.c \
+		Graphics/DrawingStraightLines.c \
+		VectorLibrary/Integer.c \
+		VectorLibrary/VectorFixed.c \
+		VectorLibrary/MatrixFixed.c \
+		VectorLibrary/QuaternionFixed.c \
+		Rasterize.c
 			
 S_FILES = 
 
@@ -67,8 +66,11 @@ upload: $(NAME).bin
 	-c "reset run" -c shutdown
 
 debug:
-	arm-none-eabi-gdb $(NAME).elf \
+	arm-eabi-gdb $(NAME).elf \
 	--eval-command="target remote | openocd -f interface/stlink-v2.cfg -f target/stm32f4x_stlink.cfg -c 'gdb_port pipe'"
+
+stlink:
+	arm-eabi-gdb $(NAME).elf --eval-command="target ext :4242"
 
 clean:
 	rm -rf $(BUILD_DIR) $(NAME).elf $(NAME).bin
