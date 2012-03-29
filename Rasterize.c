@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "Random.h"
 #include "VectorLibrary/VectorFixed.h"
 #include "VectorLibrary/MatrixFixed.h"
 
@@ -298,8 +299,35 @@ static int triAvgDepthCompare(const void *p1, const void *p2) {
 	);
 }
 
+#define NumberOfStars 300
+struct DotStar1 {
+	int x,y,dx,f;
+} dotstars[NumberOfStars];
+
+void RasterizeInit() {
+	for(int i=0;i<NumberOfStars;i++){
+		dotstars[i].x=(RandomInteger()%352-16)<<12;
+		dotstars[i].y=RandomInteger()%200;
+
+		int z=isqrt((NumberOfStars-1-i)*NumberOfStars)*1000/NumberOfStars;
+		dotstars[i].dx=(RandomInteger()%8000+5000);
+	}
+	
+	memcpy(sortedTriangles,faces,sizeof(index_triangle_t)*numFaces);
+	memcpy(sortedTriangles+numFaces,faces_rad,sizeof(index_triangle_t)*numFaces_rad);
+}
+
 void RasterizeTest(uint8_t* image) {
 	static int32_t rotcnt;
+
+	// Do a background
+	for(int i=0;i<NumberOfStars;i++){
+		dotstars[i].x-=dotstars[i].dx;
+		if(dotstars[i].x < 0) dotstars[i].x = IntToFixed(319);
+		dotstars[i].y+=2;
+		if(dotstars[i].y >= 200) dotstars[i].y = 0;
+		image[FixedToInt(dotstars[i].x) + dotstars[i].y*WIDTH] = RGB(7,7,3);
+	}
 	
 	// Projection matrix
 	imat4x4_t proj = imat4x4diagonalperspective(IntToFixed(45),idiv(IntToFixed(WIDTH),IntToFixed(HEIGHT)),4096,IntToFixed(60));
@@ -307,9 +335,10 @@ void RasterizeTest(uint8_t* image) {
 	// Modelview matrix
 	imat4x4_t modelview = imat4x4affinemul(imat4x4translate(ivec3(IntToFixed(0),IntToFixed(0),IntToFixed(-30))),imat4x4rotatex(rotcnt*24));
 	modelview = imat4x4affinemul(modelview,imat4x4rotatez(rotcnt * 12));
-	
-	imat4x4_t modelview_rad = imat4x4affinemul(imat4x4translate(ivec3(IntToFixed(0),IntToFixed(0),IntToFixed(-30))),imat4x4rotatey(rotcnt*16));
-	modelview_rad = imat4x4affinemul(modelview_rad,imat4x4rotatez(rotcnt * 22+(rotcnt/16)*700));
+
+	int rotdir = (rotcnt/16)%2 == 0 ? -1 : 1;
+	imat4x4_t modelview_rad = imat4x4affinemul(imat4x4translate(ivec3(IntToFixed(0),IntToFixed(0),IntToFixed(-30))),imat4x4rotatey(rotcnt*16*rotdir));
+	modelview_rad = imat4x4affinemul(modelview_rad,imat4x4rotatez((rotcnt * 22 + (rotcnt/16)*700)*rotdir));
 	
 	// Transform
 	vertex_t transformVertex;
@@ -354,8 +383,6 @@ void RasterizeTest(uint8_t* image) {
 
 
 	// Depth sort
-	memcpy(sortedTriangles,faces,sizeof(index_triangle_t)*numFaces);
-	memcpy(sortedTriangles+numFaces,faces_rad,sizeof(index_triangle_t)*numFaces_rad);
 	qsort(sortedTriangles,numFaces+numFaces_rad,sizeof(index_triangle_t),&triAvgDepthCompare);
 	
 	// For each triangle

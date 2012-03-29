@@ -551,6 +551,8 @@ static void Rasterize()
 
 	int t=0;
 
+	RasterizeInit();
+	
 	while(!UserButtonState())
 	{
 		WaitVBL();
