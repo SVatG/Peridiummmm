@@ -13,8 +13,6 @@
 #define WIDTH 320
 #define HEIGHT 200
 
-#define MIN_DIFF 0
-
 #define R(x) (F( ((x) & (7 << 5)) >> 5 ))
 #define G(x) (F( ((x) & (7 << 2)) >> 2 ))
 #define B(x) (F( (x) & (3) ))
@@ -25,10 +23,19 @@
 
 #define Viewport(x,w,s) (imul(idiv((x),(w))+IntToFixed(1),IntToFixed((s)/2)))
 
+#define MAP_W 50
+#define UV(x,y) (
+
 typedef struct {
 	ivec4_t p;
+	ivec3_t n;
 	uint32_t c;
 } vertex_t;
+
+typedef struct {
+	ivec3_t p;
+	ivec3_t n;
+} init_vertex_t;
 
 typedef struct {
 	ivec3_t p;
@@ -194,14 +201,21 @@ void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat
 		leftColBd = idiv(leftColB - (IntToFixed(lowerVertex.c & (3))), lowerDiff);
 	}
 
+	colR = leftColR;
+	colG = leftColG;
+	colB = leftColB;
+	
 	scanlineMax = FixedToRoundedInt(centerVertex.p.y);
 	for(scanline = FixedToRoundedInt(upperVertex.p.y); scanline < scanlineMax; scanline++ ) {
 		int32_t xMax = FixedToRoundedInt(rightX);
 		for(int32_t x = FixedToRoundedInt(leftX); x <= xMax; x++) {
-			image[x+scanline*WIDTH] = (FixedToRoundedInt(colR)<<5) | (FixedToRoundedInt(colG)<<2) | (FixedToRoundedInt(colB));
+			image[x+scanline*WIDTH] = (FixedToInt(colR)<<5) | (FixedToInt(colG)<<2) | (FixedToInt(colB));
 			colR += colRdX;
 			colG += colGdX;
 			colB += colBdX;
+			colR = colR < 0 ? 0 : colR & 0x7FFF;
+			colG = colG < 0 ? 0 : colG & 0x7FFF;
+			colB = colB < 0 ? 0 : colB & 0x3FFF;
 		}
 		leftX += leftXd;
 		rightX += rightXd;
@@ -249,10 +263,13 @@ lower_half_render:
 	for(scanline = FixedToRoundedInt(centerVertex.p.y); scanline < scanlineMax; scanline++ ) {
 		int32_t xMax = FixedToRoundedInt(rightX);
 		for(int32_t x = FixedToRoundedInt(leftX); x <= xMax; x++) {
-			image[x+scanline*WIDTH] = (FixedToRoundedInt(colR)<<5) | (FixedToRoundedInt(colG)<<2) | (FixedToRoundedInt(colB));
+			image[x+scanline*WIDTH] = (FixedToInt(colR)<<5) | (FixedToInt(colG)<<2) | (FixedToInt(colB));
 			colR += colRdX;
 			colG += colGdX;
 			colB += colBdX;
+			colR = colR < 0 ? 0 : colR & 0x7FFF;
+			colG = colG < 0 ? 0 : colG & 0x7FFF;
+			colB = colB < 0 ? 0 : colB & 0x3FFF;
 		}
 		leftX += leftXd;
 		rightX += rightXd;
@@ -290,28 +307,34 @@ void RasterizeTest(uint8_t* image) {
 	// Modelview matrix
 	imat4x4_t modelview = imat4x4affinemul(imat4x4translate(ivec3(IntToFixed(0),IntToFixed(0),IntToFixed(-30))),imat4x4rotatex(rotcnt*24));
 	modelview = imat4x4affinemul(modelview,imat4x4rotatez(rotcnt * 12));
-
+	
 	imat4x4_t modelview_rad = imat4x4affinemul(imat4x4translate(ivec3(IntToFixed(0),IntToFixed(0),IntToFixed(-30))),imat4x4rotatey(rotcnt*16));
-	modelview_rad = imat4x4affinemul(modelview_rad,imat4x4rotatez(rotcnt * 22));
+	modelview_rad = imat4x4affinemul(modelview_rad,imat4x4rotatez(rotcnt * 22+(rotcnt/16)*700));
 	
 	// Transform
 	vertex_t transformVertex;
 	for(int32_t i = 0; i < numVertices; i++) {
-		transformVertex.p = imat4x4transform(modelview,vertices[i].p);
-
+		transformVertex.p = imat4x4transform(modelview,ivec4(vertices[i].p.x,vertices[i].p.y,vertices[i].p.z,F(1)));
+		transformVertex.n = ivec4_xyz(imat4x4transform(modelview,ivec4(vertices[i].n.x,vertices[i].n.y,vertices[i].n.z,F(0))));
+		
 		// Project
 		transformVertex.p = imat4x4transform(proj,transformVertex.p);
-
+		
 		// Perspective divide and viewport transform
 		transformedVertices[i].p = ivec3(
 			Viewport(transformVertex.p.x,transformVertex.p.w,WIDTH),
 			Viewport(transformVertex.p.y,transformVertex.p.w,HEIGHT),
 			transformVertex.p.z
 		);
-		transformedVertices[i].c = vertices[i].c;
+		int32_t dist = isqrt((transformVertex.n.x*transformVertex.n.x) + (transformVertex.n.y*transformVertex.n.y))/(5793*4);
+		int32_t r = dist > 6 ? dist - 7 : 0;
+		r = r > 6 ? 6 : r;
+		int32_t g = dist > 6 ? 6 : dist;
+		transformedVertices[i].c = RGB(r,g,2);
 	}
 	for(int32_t i = 0; i < numVertices_rad; i++) {
-		transformVertex.p = imat4x4transform(modelview_rad,vertices_rad[i].p);
+		transformVertex.p = imat4x4transform(modelview_rad,ivec4(vertices_rad[i].p.x,vertices_rad[i].p.y,vertices_rad[i].p.z,F(1)));
+		transformVertex.n = ivec4_xyz(imat4x4transform(modelview,ivec4(vertices_rad[i].n.x,vertices_rad[i].n.y,vertices_rad[i].n.z,F(0))));
 
 		// Project
 		transformVertex.p = imat4x4transform(proj,transformVertex.p);
@@ -322,7 +345,11 @@ void RasterizeTest(uint8_t* image) {
 			Viewport(transformVertex.p.y,transformVertex.p.w,HEIGHT),
 			transformVertex.p.z
 		);
-		transformedVertices[i+numVertices].c = vertices_rad[i].c;
+		int32_t dist = isqrt((transformVertex.n.x*transformVertex.n.x) + (transformVertex.n.y*transformVertex.n.y))/(5793*4);
+		int32_t g = dist > 6 ? dist - 7 : 0;
+		g = g > 6 ? 6 : g;
+		int32_t r = dist > 6 ? 6 : dist;
+		transformedVertices[i+numVertices].c = RGB(r,g,2);
 	}
 
 
@@ -333,7 +360,8 @@ void RasterizeTest(uint8_t* image) {
 	
 	// For each triangle
 	triangle_t tri;
-	for(int32_t i = 0; i < numFaces + numFaces_rad; i++ ) {
+	int32_t max_f = imin(imax(rotcnt*7-400,0),numFaces+numFaces_rad);
+	for(int32_t i = 0; i < max_f; i++ ) {
 		tri.v[0] = transformedVertices[sortedTriangles[i].v[0]];
 		tri.v[1] = transformedVertices[sortedTriangles[i].v[1]];
 		tri.v[2] = transformedVertices[sortedTriangles[i].v[2]];
