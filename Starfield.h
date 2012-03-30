@@ -7,7 +7,7 @@
 #define MinStarZ 3
 #define StarWidth 10000
 
-#define NumberOfStars 1500
+#define NumberOfStars 2000
 
 struct StarfieldData
 {

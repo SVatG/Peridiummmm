@@ -87,10 +87,19 @@ void Starfield()
 			DrawRLEBitmap(currframe,sprites[sprite],sx-16,sy-16);
 		}
 
-		int rotation=(t/40)%3-1;
+		int rotation=(((t/90)*124123)/3124)%5-2;
 
 		switch(rotation)
 		{
+			case -2:
+				for(int i=0;i<NumberOfStars;i++)
+				{
+					data.starfield.stars[i].x+=data.starfield.stars[i].y>>5;
+					data.starfield.stars[i].y-=data.starfield.stars[i].x>>5;
+					data.starfield.stars[i].z--;
+				}
+			break;
+
 			case -1:
 				for(int i=0;i<NumberOfStars;i++)
 				{
@@ -113,6 +122,15 @@ void Starfield()
 				{
 					data.starfield.stars[i].x-=data.starfield.stars[i].y>>6;
 					data.starfield.stars[i].y+=data.starfield.stars[i].x>>6;
+					data.starfield.stars[i].z--;
+				}
+			break;
+
+			case 2:
+				for(int i=0;i<NumberOfStars;i++)
+				{
+					data.starfield.stars[i].x-=data.starfield.stars[i].y>>5;
+					data.starfield.stars[i].y+=data.starfield.stars[i].x>>5;
 					data.starfield.stars[i].z--;
 				}
 			break;
