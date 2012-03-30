@@ -32,7 +32,7 @@ void Scroller(const char *text)
 	Bitmap textbitmap;
 	InitializeBitmap(&textbitmap,4000,16,4000,(uint8_t *)0x20010000);
 	ClearBitmap(&textbitmap);
-	DrawString(&textbitmap,&OLFont,0,0,0,text);
+	DrawString(&textbitmap,&OLFont,320,0,0,text);
 
 	memset(&data,0,sizeof(data));
 
@@ -79,7 +79,9 @@ void Scroller(const char *text)
 		WaitVBL();
 		int t=VGAFrameCounter();
 
-		data.scanline=0x20010000;
+		int offs=t*2;
+		if(offs>4000-320) offs=4000-320;
+		data.scanline=0x20010000+offs;
 
 		SetLEDs(1<<((t/3)&3));
 
@@ -248,17 +250,20 @@ static void ScrollerHSyncHandler()
 	
 		((uint8_t *)&GPIOE->ODR)[1]=0;
 	}
-	else if(line>=200-8 && line<200+8)
+	else if(line>=200-16 && line<200+16)
 	{
 		register uint32_t r0 __asm__("r0")=data.scanline;
 		register uint32_t r1 __asm__("r1")=((uint32_t)&GPIOE->ODR)+1;
-		register uint32_t r2 __asm__("r2")=120;
+		register uint32_t r2 __asm__("r2")=320;
 
 		__asm__ volatile(
 		"0:						\n"
 		"	ldrb	r3,[r0]		\n"
 		"	strb	r3,[r1]		\n"
 		"	add		r0,r0,#1	\n"
+		"	nop					\n"
+		"	nop					\n"
+		"	nop					\n"
 		"	nop					\n"
 		"	nop					\n"
 		"	nop					\n"
@@ -269,13 +274,13 @@ static void ScrollerHSyncHandler()
 		:"r3");
 
 		((uint8_t *)&GPIOE->ODR)[1]=0;
-		data.scanline+=4000;
+		if(line&1) data.scanline+=4000;
 	}
 	else
 	{
 		((uint8_t *)&GPIOE->ODR)[1]=data.lines[line].texture;
 
-		register uint32_t r0 __asm__("r0")=1500;
+		register uint32_t r0 __asm__("r0")=1400;
 
 		__asm__ volatile(
 		"0:						\n"
