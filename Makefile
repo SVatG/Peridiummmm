@@ -36,7 +36,6 @@ C_FILES =	Accelerometer.c \
 		Startup.c \
 		System.c \
 		TestSong.c \
-		Utils.c \
 		VGA.c \
 		Graphics/Bitmap.c \
 		Graphics/ColourFont.c \
@@ -47,6 +46,11 @@ C_FILES =	Accelerometer.c \
 		Graphics/DrawingRLEBitmaps.c \
 		Graphics/DrawingStraightLines.c \
 		Graphics/Font.c \
+		VectorLibrary/Integer.c \
+		VectorLibrary/VectorFixed.c \
+		VectorLibrary/MatrixFixed.c \
+		VectorLibrary/QuaternionFixed.c \
+		Rasterize.c
 			
 S_FILES = 
 

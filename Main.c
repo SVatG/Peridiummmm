@@ -12,6 +12,7 @@
 
 #include "Rotozoomer.h"
 #include "Starfield.h"
+#include "Rasterize.h"
 #include "Epileptor.h"
 #include "Scroller.h"
 
@@ -40,6 +41,7 @@ int main()
 	for(;;)
 	{
 		Scroller("Look out honey coz I'm using technology, ain't got time to make no apology");
+		Rasterize();
 		Starfield();
 		Rotozoom();
 		Epileptor();
@@ -60,6 +62,3 @@ static void AudioCallback(void *context,int buffer)
 
 	ProvideAudioBuffer(samples,256);
 }
-
-
-
