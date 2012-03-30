@@ -10,6 +10,7 @@
 #include "Utils.h"
 #include "BitBin.h"
 
+#include "Metablobs.h"
 #include "Rotozoomer.h"
 #include "Starfield.h"
 #include "Rasterize.h"
