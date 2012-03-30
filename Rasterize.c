@@ -408,7 +408,7 @@ void Rasterize() {
 	uint8_t *framebuffer2=(uint8_t *)0x20010000;
 	memset(framebuffer1,0,320*200);
 	memset(framebuffer2,0,320*200);
-	IntializeVGAScreenMode320x200(framebuffer1);
+	SetVGAScreenMode320x200(framebuffer1);
 
 	Bitmap frame1,frame2;
 	InitializeBitmap(&frame1,320,200,320,framebuffer1);

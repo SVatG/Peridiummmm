@@ -36,7 +36,7 @@ int main()
 	SetAudioVolume(0xaf);
 	PlayAudioWithCallback(AudioCallback,&song);
 
-	IntializeVGAScreenMode320x200((void *)0x20000000);
+	InitializeVGAScreenMode200();
 
 	for(;;)
 	{

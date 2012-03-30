@@ -29,10 +29,12 @@ static uint32_t PackCoordinates(int32_t x,int32_t y)
 
 void Scroller(const char *text)
 {
+	int first=VGAFrameCounter();
+
 	Bitmap textbitmap;
 	InitializeBitmap(&textbitmap,4000,16,4000,(uint8_t *)0x20010000);
 	ClearBitmap(&textbitmap);
-	DrawString(&textbitmap,&OLFont,0,0,0,text);
+	DrawString(&textbitmap,&OLFont,320,0,0,text);
 
 	memset(&data,0,sizeof(data));
 
@@ -77,9 +79,11 @@ void Scroller(const char *text)
 	while(!UserButtonState())
 	{
 		WaitVBL();
-		int t=VGAFrameCounter();
+		int t=VGAFrameCounter()-first;
 
-		data.scanline=0x20010000;
+		int offs=t*2;
+		if(offs>4000-320) offs=4000-320;
+		data.scanline=0x20010000+offs;
 
 		SetLEDs(1<<((t/3)&3));
 
@@ -190,6 +194,9 @@ void Scroller(const char *text)
 			}
 		}
 	}
+
+	SetBlankVGAScreenMode200();
+
 	while(UserButtonState());
 }
 
@@ -246,13 +253,13 @@ static void ScrollerHSyncHandler()
 		: "r" (r0), "r" (r1), "r" (r2), "r" (r3), "r" (r4)
 		:"r5","r6");
 	
-		((uint8_t *)&GPIOE->ODR)[1]=0;
+		SetVGASignalToBlack();
 	}
-	else if(line>=200-8 && line<200+8)
+	else if(line>=200-16 && line<200+16)
 	{
 		register uint32_t r0 __asm__("r0")=data.scanline;
 		register uint32_t r1 __asm__("r1")=((uint32_t)&GPIOE->ODR)+1;
-		register uint32_t r2 __asm__("r2")=120;
+		register uint32_t r2 __asm__("r2")=320;
 
 		__asm__ volatile(
 		"0:						\n"
@@ -262,20 +269,23 @@ static void ScrollerHSyncHandler()
 		"	nop					\n"
 		"	nop					\n"
 		"	nop					\n"
+		"	nop					\n"
+		"	nop					\n"
+		"	nop					\n"
 		"	subs	r2,r2,#1	\n"
 		"	bne		0b			\n"
 		:
 		:"r" (r0), "r" (r1), "r" (r2)
 		:"r3");
 
-		((uint8_t *)&GPIOE->ODR)[1]=0;
-		data.scanline+=4000;
+		SetVGASignalToBlack();
+		if(line&1) data.scanline+=4000;
 	}
 	else
 	{
-		((uint8_t *)&GPIOE->ODR)[1]=data.lines[line].texture;
+		SetVGASignal(data.lines[line].texture);
 
-		register uint32_t r0 __asm__("r0")=1500;
+		register uint32_t r0 __asm__("r0")=1400;
 
 		__asm__ volatile(
 		"0:						\n"
@@ -285,6 +295,6 @@ static void ScrollerHSyncHandler()
 		: "r" (r0)
 		:);
 
-		((uint8_t *)&GPIOE->ODR)[1]=0;
+		SetVGASignalToBlack();
 	}
 }
