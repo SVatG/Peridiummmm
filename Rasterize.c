@@ -32,29 +32,8 @@
 #define MAP_W 50
 #define UV(x,y) (
 
-typedef struct {
-	ivec4_t p;
-	ivec3_t n;
-	uint32_t c;
-} vertex_t;
-
-typedef struct {
-	ivec3_t p;
-	ivec3_t n;
-} init_vertex_t;
-
-typedef struct {
-	ivec3_t p;
-	uint32_t c;
-} ss_vertex_t;
-
-typedef struct {
-	ss_vertex_t v[3];
-} triangle_t;
-
-typedef struct {
-	int32_t v[3];
-} index_triangle_t;
+#include "Rasterize.h"
+#include "Global.h"
 
 #include "rad.h"
 #include "spikes.h"
@@ -288,50 +267,42 @@ lower_half_render:
 	}
 }
 
-ss_vertex_t transformedVertices[numVertices+numVertices_rad];
-index_triangle_t sortedTriangles[numFaces+numFaces_rad];
-
 static int triAvgDepthCompare(const void *p1, const void *p2) {
 	index_triangle_t* t1 = (index_triangle_t*)p1;
 	index_triangle_t* t2 = (index_triangle_t*)p2;
 	return(
-		transformedVertices[t2->v[0]].p.z +
-		transformedVertices[t2->v[1]].p.z +
-		transformedVertices[t2->v[2]].p.z -
-		transformedVertices[t1->v[0]].p.z -
-		transformedVertices[t1->v[1]].p.z -
-		transformedVertices[t1->v[2]].p.z
+		data.rasterizer.transformedVertices[t2->v[0]].p.z +
+		data.rasterizer.transformedVertices[t2->v[1]].p.z +
+		data.rasterizer.transformedVertices[t2->v[2]].p.z -
+		data.rasterizer.transformedVertices[t1->v[0]].p.z -
+		data.rasterizer.transformedVertices[t1->v[1]].p.z -
+		data.rasterizer.transformedVertices[t1->v[2]].p.z
 	);
 }
 
-#define NumberOfStars 300
-struct DotStar1 {
-	int x,y,dx,f;
-} dotstars[NumberOfStars];
-
 void RasterizeInit() {
-	for(int i=0;i<NumberOfStars;i++){
-		dotstars[i].x=(RandomInteger()%352-16)<<12;
-		dotstars[i].y=RandomInteger()%200;
+	for(int i=0;i<NumberOfDotStars;i++){
+		data.rasterizer.dotstars[i].x=(RandomInteger()%352-16)<<12;
+		data.rasterizer.dotstars[i].y=RandomInteger()%200;
 
-		int z=isqrt((NumberOfStars-1-i)*NumberOfStars)*1000/NumberOfStars;
-		dotstars[i].dx=(RandomInteger()%8000+5000);
+		int z=isqrt((NumberOfDotStars-1-i)*NumberOfDotStars)*1000/NumberOfDotStars;
+		data.rasterizer.dotstars[i].dx=(RandomInteger()%8000+5000);
 	}
 	
-	memcpy(sortedTriangles,faces,sizeof(index_triangle_t)*numFaces);
-	memcpy(sortedTriangles+numFaces,faces_rad,sizeof(index_triangle_t)*numFaces_rad);
+	memcpy(data.rasterizer.sortedTriangles,faces,sizeof(index_triangle_t)*numFaces);
+	memcpy(data.rasterizer.sortedTriangles+numFaces,faces_rad,sizeof(index_triangle_t)*numFaces_rad);
 }
 
 void RasterizeTest(uint8_t* image) {
 	static int32_t rotcnt;
 
 	// Do a background
-	for(int i=0;i<NumberOfStars;i++){
-		dotstars[i].x-=dotstars[i].dx;
-		if(dotstars[i].x < 0) dotstars[i].x = IntToFixed(319);
-		dotstars[i].y+=2;
-		if(dotstars[i].y >= 200) dotstars[i].y = 0;
-		image[FixedToInt(dotstars[i].x) + dotstars[i].y*WIDTH] = RastRGB(7,7,3);
+	for(int i=0;i<NumberOfDotStars;i++){
+		data.rasterizer.dotstars[i].x-=data.rasterizer.dotstars[i].dx;
+		if(data.rasterizer.dotstars[i].x < 0) data.rasterizer.dotstars[i].x = IntToFixed(319);
+		data.rasterizer.dotstars[i].y+=2;
+		if(data.rasterizer.dotstars[i].y >= 200) data.rasterizer.dotstars[i].y = 0;
+		image[FixedToInt(data.rasterizer.dotstars[i].x) + data.rasterizer.dotstars[i].y*WIDTH] = RastRGB(7,7,3);
 	}
 	
 	// Projection matrix
@@ -355,7 +326,7 @@ void RasterizeTest(uint8_t* image) {
 		transformVertex.p = imat4x4transform(proj,transformVertex.p);
 		
 		// Perspective divide and viewport transform
-		transformedVertices[i].p = ivec3(
+		data.rasterizer.transformedVertices[i].p = ivec3(
 			Viewport(transformVertex.p.x,transformVertex.p.w,WIDTH),
 			Viewport(transformVertex.p.y,transformVertex.p.w,HEIGHT),
 			transformVertex.p.z
@@ -364,7 +335,7 @@ void RasterizeTest(uint8_t* image) {
 		int32_t r = dist > 6 ? dist - 7 : 0;
 		r = r > 6 ? 6 : r;
 		int32_t g = dist > 6 ? 6 : dist;
-		transformedVertices[i].c = RastRGB(r,g,2);
+		data.rasterizer.transformedVertices[i].c = RastRGB(r,g,2);
 	}
 	for(int32_t i = 0; i < numVertices_rad; i++) {
 		transformVertex.p = imat4x4transform(modelview_rad,ivec4(vertices_rad[i].p.x,vertices_rad[i].p.y,vertices_rad[i].p.z,F(1)));
@@ -374,7 +345,7 @@ void RasterizeTest(uint8_t* image) {
 		transformVertex.p = imat4x4transform(proj,transformVertex.p);
 
 		// Perspective divide and viewport transform
-		transformedVertices[i+numVertices].p = ivec3(
+		data.rasterizer.transformedVertices[i+numVertices].p = ivec3(
 			Viewport(transformVertex.p.x,transformVertex.p.w,WIDTH),
 			Viewport(transformVertex.p.y,transformVertex.p.w,HEIGHT),
 			transformVertex.p.z
@@ -383,20 +354,20 @@ void RasterizeTest(uint8_t* image) {
 		int32_t g = dist > 6 ? dist - 7 : 0;
 		g = g > 6 ? 6 : g;
 		int32_t r = dist > 6 ? 6 : dist;
-		transformedVertices[i+numVertices].c = RastRGB(r,g,2);
+		data.rasterizer.transformedVertices[i+numVertices].c = RastRGB(r,g,2);
 	}
 
 
 	// Depth sort
-	qsort(sortedTriangles,numFaces+numFaces_rad,sizeof(index_triangle_t),&triAvgDepthCompare);
+	qsort(data.rasterizer.sortedTriangles,numFaces+numFaces_rad,sizeof(index_triangle_t),&triAvgDepthCompare);
 	
 	// For each triangle
 	triangle_t tri;
 	int32_t max_f = imin(imax(rotcnt*7-400,0),numFaces+numFaces_rad);
 	for(int32_t i = 0; i < max_f; i++ ) {
-		tri.v[0] = transformedVertices[sortedTriangles[i].v[0]];
-		tri.v[1] = transformedVertices[sortedTriangles[i].v[1]];
-		tri.v[2] = transformedVertices[sortedTriangles[i].v[2]];
+		tri.v[0] = data.rasterizer.transformedVertices[data.rasterizer.sortedTriangles[i].v[0]];
+		tri.v[1] = data.rasterizer.transformedVertices[data.rasterizer.sortedTriangles[i].v[1]];
+		tri.v[2] = data.rasterizer.transformedVertices[data.rasterizer.sortedTriangles[i].v[2]];
 		RasterizeTriangle(image, tri, modelview, proj);
 	}
 	

@@ -1,4 +1,3 @@
-#define numVertices_rad 192
 const init_vertex_t vertices_rad[] = {
 	{ { F(10.81738814), F(0), F(0) }, { F(1), F(2.9895709e-16), F(-2.3356023e-16) } },
 	{ { F(9.993963525), F(0), F(4.13963524) }, { F(0.92387953), F(-1.1266945e-14), F(0.38268343) } },
@@ -194,7 +193,6 @@ const init_vertex_t vertices_rad[] = {
 	{ { F(-11.633800165), F(2.992723825), F(1.259713065) }, { F(-0.48287504), F(0.8581282), F(-0.17449263) } },
 };
 
-#define numFaces_rad 384
 const index_triangle_t faces_rad[] = {
 	{360, 376, 361},
 	{360, 408, 375},

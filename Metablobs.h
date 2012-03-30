@@ -3,4 +3,16 @@
 
 void Metablobs();
 
+#define numBlobs 400
+
+typedef struct {
+	int32_t x;
+	int32_t y;
+	const uint8_t* blob;
+} Blob;
+
+struct MetablobsData {
+	Blob blobs[numBlobs];
+};
+
 #endif
