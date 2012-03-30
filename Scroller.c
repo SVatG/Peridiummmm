@@ -91,8 +91,8 @@ void Scroller(const char *text)
 		int32_t pathangle=-t*5;
 		int32_t scale=(icos(t*17)+Fix(2))/2;
 
-		int r1=255,g1=0,b1=0;
-		int r2=0,g2=255,b2=0;
+		int r1=255,g1=0,b1=255;
+		int r2=0,g2=255,b2=255;
 
 		int32_t wdx=icos(viewangle);
 		int32_t wdy=isin(viewangle);
