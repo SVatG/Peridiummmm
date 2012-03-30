@@ -1,7 +1,9 @@
 #include "Starfield.h"
+#include "Global.h"
 #include "VGA.h"
 #include "Sprites.h"
 #include "LED.h"
+#include "Utils.h"
 #include "Button.h"
 #include "Random.h"
 
@@ -10,9 +12,6 @@
 
 #include <stdint.h>
 #include <string.h>
-
-
-static uint32_t sqrti(uint32_t n);
 
 void Starfield()
 {
@@ -23,24 +22,7 @@ void Starfield()
 
 	SetVGAScreenMode320x200(framebuffer1);
 
-	#define NumberOfStars 1050
-	static struct Star
-	{
-		int x,y,dx,f;
-	} stars[NumberOfStars];
-
-	for(int i=0;i<NumberOfStars;i++)
-	{
-		stars[i].x=(RandomInteger()%352-16)<<12;
-		stars[i].y=RandomInteger()%200;
-
-		int z=sqrti((NumberOfStars-1-i)*NumberOfStars)*1000/NumberOfStars;
-		stars[i].dx=6000*1200/(z+200);
-
-		stars[i].f=(6-(z*7)/1000)+(RandomInteger()%6)*7;
-	}
-
-	const RLEBitmap *sprites[7*6]={
+	static const RLEBitmap *sprites[7*6]={
 		&Star1_0,&Star2_0,&Star3_0,&Star4_0,&Star5_0,&Star6_0,&Star7_0,
 		&Star1_1,&Star2_1,&Star3_1,&Star4_1,&Star5_1,&Star6_1,&Star7_1,
 		&Star1_2,&Star2_2,&Star3_2,&Star4_2,&Star5_2,&Star6_2,&Star7_2,
@@ -53,7 +35,25 @@ void Starfield()
 	InitializeBitmap(&frame1,320,200,320,framebuffer1);
 	InitializeBitmap(&frame2,320,200,320,framebuffer2);
 
+	for(int i=0;i<NumberOfStars;i++)
+	{
+		data.starfield.stars[i].x=RandomInteger()%(2*StarWidth)-StarWidth;
+		data.starfield.stars[i].y=RandomInteger()%(2*StarWidth)-StarWidth;
+		data.starfield.stars[i].z=i*(MaxStarZ-MinStarZ)/NumberOfStars+MinStarZ;
+
+		data.starfield.stars[i].c=(RandomInteger()%6)*7;
+	}
+
+	for(int z=MinStarZ;z<=MaxStarZ;z++)
+	{
+		int frame=MaxStarZ/z-1;
+		if(frame>6) frame=6;
+		data.starfield.frames[z]=frame;
+	}
+
 	int frame=0;
+	int nearestindex=0;
+	int first=VGAFrameCounter();
 
 	while(!UserButtonState())
 	{
@@ -65,41 +65,61 @@ void Starfield()
 
 		ClearBitmap(currframe);
 
-		for(int i=0;i<NumberOfStars;i++)
-		{
-			DrawRLEBitmap(currframe,sprites[stars[i].f],
-			(stars[i].x>>12)-16,stars[i].y-16);
+		int t=VGAFrameCounter()-first;
 
-			stars[i].x-=stars[i].dx;
-			if(stars[i].x<=-16<<12)
-			{
-				stars[i].x=(320+16)<<12;
-				stars[i].y=RandomInteger()%200;
-				stars[i].f=(stars[i].f%7)+(RandomInteger()%6)*7;
-			}
+		while(data.starfield.stars[nearestindex].z==MinStarZ)
+		{
+			data.starfield.stars[nearestindex].z=MaxStarZ;
+			data.starfield.stars[nearestindex].x=RandomInteger()%(2*StarWidth)-StarWidth;
+			data.starfield.stars[nearestindex].y=RandomInteger()%(2*StarWidth)-StarWidth;
+			nearestindex++;
+			if(nearestindex==NumberOfStars) nearestindex=0;
+		}
+
+		for(int n=NumberOfStars-1;n>=0;n--)
+		{
+			int i=n+nearestindex;
+			if(i>=NumberOfStars) i-=NumberOfStars;
+
+			int32_t sx=data.starfield.stars[i].x/data.starfield.stars[i].z+160;
+			int32_t sy=data.starfield.stars[i].y/data.starfield.stars[i].z+100;
+			int sprite=data.starfield.stars[i].c+data.starfield.frames[data.starfield.stars[i].z];
+			DrawRLEBitmap(currframe,sprites[sprite],sx-16,sy-16);
+		}
+
+		int rotation=(t/40)%3-1;
+
+		switch(rotation)
+		{
+			case -1:
+				for(int i=0;i<NumberOfStars;i++)
+				{
+					data.starfield.stars[i].x+=data.starfield.stars[i].y>>6;
+					data.starfield.stars[i].y-=data.starfield.stars[i].x>>6;
+					data.starfield.stars[i].z--;
+				}
+			break;
+
+			default:
+			case 0:
+				for(int i=0;i<NumberOfStars;i++)
+				{
+					data.starfield.stars[i].z--;
+				}
+			break;
+
+			case 1:
+				for(int i=0;i<NumberOfStars;i++)
+				{
+					data.starfield.stars[i].x-=data.starfield.stars[i].y>>6;
+					data.starfield.stars[i].y+=data.starfield.stars[i].x>>6;
+					data.starfield.stars[i].z--;
+				}
+			break;
 		}
 
 		frame++;
 	}
 
 	while(UserButtonState());
-}
-
-static uint32_t sqrti(uint32_t n)
-{
-	uint32_t s,t;
-
-	#define sqrtBit(k) \
-	t = s+(1UL<<(k-1)); t <<= k+1; if (n >= t) { n -= t; s |= 1UL<<k; }
-
-	s=0;
-	if(n>=1<<30) { n-=1<<30; s=1<<15; }
-	sqrtBit(14); sqrtBit(13); sqrtBit(12); sqrtBit(11); sqrtBit(10);
-	sqrtBit(9); sqrtBit(8); sqrtBit(7); sqrtBit(6); sqrtBit(5);
-	sqrtBit(4); sqrtBit(3); sqrtBit(2); sqrtBit(1);
-	if(n>s<<1) s|=1;
-
-	#undef sqrtBit
-
-	return s;
 }

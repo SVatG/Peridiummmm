@@ -16,7 +16,7 @@
 
 #include "Utils.h"
 
-#define numBlobs 400
+#define numBlobs 40
 
 #include "Graphics/RLEBitmap.h"
 

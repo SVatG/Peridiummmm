@@ -1,4 +1,5 @@
 #include "Scroller.h"
+#include "Global.h"
 #include "VGA.h"
 #include "LED.h"
 #include "Button.h"
@@ -17,8 +18,6 @@ static uint32_t sqrti(uint32_t n);
 
 extern Font OLFont;
 
-struct ScrollerData data;
-
 static uint32_t PackCoordinates(int32_t x,int32_t y)
 {
 	x&=0x7fff;
@@ -36,7 +35,7 @@ void Scroller(const char *text)
 	ClearBitmap(&textbitmap);
 	DrawString(&textbitmap,&OLFont,320,0,0,text);
 
-	memset(&data,0,sizeof(data));
+	memset(&data,0,sizeof(struct ScrollerData));
 
 	uint8_t *texture=(uint8_t *)0x20000000;
 
@@ -53,26 +52,26 @@ void Scroller(const char *text)
 
 	for(int y=0;y<400;y++)
 	{
-		data.lines[y].z=idiv(Fix(1000),iabs(Fix(y-200)));
+		data.scroller.lines[y].z=idiv(Fix(1000),iabs(Fix(y-200)));
 	}
 
 	for(int i=0;i<8;i++)
 	{
-		data.copper[0][i]=RGB(i*32,0,0);
-		data.copper[0][15-i]=RGB(i*32,0,0);
-		data.copper[1][i]=RGB(i*32,i*32,0);
-		data.copper[1][15-i]=RGB(i*32,i*32,0);
-		data.copper[2][i]=RGB(0,i*32,0);
-		data.copper[2][15-i]=RGB(0,i*32,0);
-		data.copper[3][i]=RGB(0,i*32,i*32);
-		data.copper[3][15-i]=RGB(0,i*32,i*32);
-		data.copper[4][i]=RGB(0,0,i*32);
-		data.copper[4][15-i]=RGB(0,0,i*32);
-		data.copper[5][i]=RGB(i*32,0,i*32);
-		data.copper[5][15-i]=RGB(i*32,0,i*32);
+		data.scroller.copper[0][i]=RGB(i*32,0,0);
+		data.scroller.copper[0][15-i]=RGB(i*32,0,0);
+		data.scroller.copper[1][i]=RGB(i*32,i*32,0);
+		data.scroller.copper[1][15-i]=RGB(i*32,i*32,0);
+		data.scroller.copper[2][i]=RGB(0,i*32,0);
+		data.scroller.copper[2][15-i]=RGB(0,i*32,0);
+		data.scroller.copper[3][i]=RGB(0,i*32,i*32);
+		data.scroller.copper[3][15-i]=RGB(0,i*32,i*32);
+		data.scroller.copper[4][i]=RGB(0,0,i*32);
+		data.scroller.copper[4][15-i]=RGB(0,0,i*32);
+		data.scroller.copper[5][i]=RGB(i*32,0,i*32);
+		data.scroller.copper[5][15-i]=RGB(i*32,0,i*32);
 	}
 
-	data.scanline=0x20010000;
+	data.scroller.scanline=0x20010000;
 
 	SetVGAHorizontalSync31kHz(ScrollerHSyncHandler);
 
@@ -83,7 +82,7 @@ void Scroller(const char *text)
 
 		int offs=t*2;
 		if(offs>4000-320) offs=4000-320;
-		data.scanline=0x20010000+offs;
+		data.scroller.scanline=0x20010000+offs;
 
 		SetLEDs(1<<((t/3)&3));
 
@@ -129,7 +128,7 @@ void Scroller(const char *text)
 		{
 			if(y<128||y>=400-128)
 			{
-				int32_t z=data.lines[y].z;
+				int32_t z=data.scroller.lines[y].z;
 
 				int32_t x1=x0+imul(-wdy,z);
 				int32_t y1=y0+imul(wdx,z);
@@ -164,33 +163,33 @@ void Scroller(const char *text)
 				if((RandomInteger()&31)<(g&31)) g+=32;
 				if((RandomInteger()&63)<(b&63)) b+=64;*/
 
-				data.lines[y].pos=PackCoordinates(x2,y2);
-				data.lines[y].delta=PackCoordinates(sdx,sdy);
-				data.lines[y].texture=RGB(r,g,b);
+				data.scroller.lines[y].pos=PackCoordinates(x2,y2);
+				data.scroller.lines[y].delta=PackCoordinates(sdx,sdy);
+				data.scroller.lines[y].texture=RGB(r,g,b);
 			}
 			else if(y<128+48)
 			{
 				int ty=y-128;
 
-				if(ty>=coppery0 && ty<coppery0+16) data.lines[y].texture=data.copper[coppercol0][ty-coppery0];
-				else if(ty>=coppery1 && ty<coppery1+16) data.lines[y].texture=data.copper[coppercol1][ty-coppery1];
-				else if(ty>=coppery5 && ty<coppery5+16) data.lines[y].texture=data.copper[coppercol5][ty-coppery5];
-				else if(ty>=coppery2 && ty<coppery2+16) data.lines[y].texture=data.copper[coppercol2][ty-coppery2];
-				else if(ty>=coppery4 && ty<coppery4+16) data.lines[y].texture=data.copper[coppercol4][ty-coppery4];
-				else if(ty>=coppery3 && ty<coppery3+16) data.lines[y].texture=data.copper[coppercol3][ty-coppery3];
-				else data.lines[y].texture=0;
+				if(ty>=coppery0 && ty<coppery0+16) data.scroller.lines[y].texture=data.scroller.copper[coppercol0][ty-coppery0];
+				else if(ty>=coppery1 && ty<coppery1+16) data.scroller.lines[y].texture=data.scroller.copper[coppercol1][ty-coppery1];
+				else if(ty>=coppery5 && ty<coppery5+16) data.scroller.lines[y].texture=data.scroller.copper[coppercol5][ty-coppery5];
+				else if(ty>=coppery2 && ty<coppery2+16) data.scroller.lines[y].texture=data.scroller.copper[coppercol2][ty-coppery2];
+				else if(ty>=coppery4 && ty<coppery4+16) data.scroller.lines[y].texture=data.scroller.copper[coppercol4][ty-coppery4];
+				else if(ty>=coppery3 && ty<coppery3+16) data.scroller.lines[y].texture=data.scroller.copper[coppercol3][ty-coppery3];
+				else data.scroller.lines[y].texture=0;
 			}
 			else if(y>=400-128-48)
 			{
 				int ty=47-(y-(400-128-48));
 
-				if(ty>=coppery0 && ty<coppery0+16) data.lines[y].texture=data.copper[coppercol0][ty-coppery0];
-				else if(ty>=coppery1 && ty<coppery1+16) data.lines[y].texture=data.copper[coppercol1][ty-coppery1];
-				else if(ty>=coppery5 && ty<coppery5+16) data.lines[y].texture=data.copper[coppercol5][ty-coppery5];
-				else if(ty>=coppery2 && ty<coppery2+16) data.lines[y].texture=data.copper[coppercol2][ty-coppery2];
-				else if(ty>=coppery4 && ty<coppery4+16) data.lines[y].texture=data.copper[coppercol4][ty-coppery4];
-				else if(ty>=coppery3 && ty<coppery3+16) data.lines[y].texture=data.copper[coppercol3][ty-coppery3];
-				else data.lines[y].texture=0;
+				if(ty>=coppery0 && ty<coppery0+16) data.scroller.lines[y].texture=data.scroller.copper[coppercol0][ty-coppery0];
+				else if(ty>=coppery1 && ty<coppery1+16) data.scroller.lines[y].texture=data.scroller.copper[coppercol1][ty-coppery1];
+				else if(ty>=coppery5 && ty<coppery5+16) data.scroller.lines[y].texture=data.scroller.copper[coppercol5][ty-coppery5];
+				else if(ty>=coppery2 && ty<coppery2+16) data.scroller.lines[y].texture=data.scroller.copper[coppercol2][ty-coppery2];
+				else if(ty>=coppery4 && ty<coppery4+16) data.scroller.lines[y].texture=data.scroller.copper[coppercol4][ty-coppery4];
+				else if(ty>=coppery3 && ty<coppery3+16) data.scroller.lines[y].texture=data.scroller.copper[coppercol3][ty-coppery3];
+				else data.scroller.lines[y].texture=0;
 			}
 		}
 	}
@@ -207,10 +206,10 @@ static void ScrollerHSyncHandler()
 
 	if(line<128||line>=400-128)
 	{
-		register uint32_t r0 __asm__("r0")=data.lines[line].pos;
-		register uint32_t r1 __asm__("r1")=data.lines[line].delta;
+		register uint32_t r0 __asm__("r0")=data.scroller.lines[line].pos;
+		register uint32_t r1 __asm__("r1")=data.scroller.lines[line].delta;
 		register uint32_t r2 __asm__("r2")=0x8001;
-		register uint32_t r3 __asm__("r3")=0x20000000+(data.lines[line].texture<<1);
+		register uint32_t r3 __asm__("r3")=0x20000000+(data.scroller.lines[line].texture<<1);
 		register uint32_t r4 __asm__("r4")=0x40021015;
 		#define P \
 		"	adcs	r0,r1		\n" \
@@ -257,7 +256,7 @@ static void ScrollerHSyncHandler()
 	}
 	else if(line>=200-16 && line<200+16)
 	{
-		register uint32_t r0 __asm__("r0")=data.scanline;
+		register uint32_t r0 __asm__("r0")=data.scroller.scanline;
 		register uint32_t r1 __asm__("r1")=((uint32_t)&GPIOE->ODR)+1;
 		register uint32_t r2 __asm__("r2")=320;
 
@@ -279,11 +278,11 @@ static void ScrollerHSyncHandler()
 		:"r3");
 
 		SetVGASignalToBlack();
-		if(line&1) data.scanline+=4000;
+		if(line&1) data.scroller.scanline+=4000;
 	}
 	else
 	{
-		SetVGASignal(data.lines[line].texture);
+		SetVGASignal(data.scroller.lines[line].texture);
 
 		register uint32_t r0 __asm__("r0")=1400;
 

@@ -9,6 +9,7 @@
 #include "Random.h"
 #include "Utils.h"
 #include "BitBin.h"
+#include "Global.h"
 
 #include "Metablobs.h"
 #include "Rotozoomer.h"
@@ -20,6 +21,8 @@
 static void AudioCallback(void *context,int buffer);
 int16_t *buffers[2]={ (int16_t *)0x2001fa00,(int16_t *)0x2001fc00 };
 extern BitBinNote *channels[8];
+
+union GlobalData data;
 
 int main()
 {
@@ -41,10 +44,10 @@ int main()
 
 	for(;;)
 	{
+		Starfield();
 		Metablobs();
 		Scroller("Look out honey coz I'm using technology, ain't got time to make no apology");
 		Rasterize();
-		Starfield();
 		Rotozoom();
 		Epileptor();
 	}

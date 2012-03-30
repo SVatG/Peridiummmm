@@ -1,4 +1,5 @@
 #include "Rotozoomer.h"
+#include "Global.h"
 #include "VGA.h"
 #include "LED.h"
 #include "Button.h"
@@ -12,8 +13,6 @@
 static void RotozoomHSYNCHandler();
 static uint32_t sqrti(uint32_t n);
 
-static volatile int32_t x0,y0,dx,dy;
-
 static uint32_t PackCoordinates(int32_t x,int32_t y)
 {
 	x&=0x1ffff;
@@ -21,12 +20,10 @@ static uint32_t PackCoordinates(int32_t x,int32_t y)
 	return (y>>(12-16+5))|(x<<20)|(x>>12);
 }
 
-static volatile uint32_t Pos,Delta;
-static uint8_t linetexture[400];
 
 void Rotozoom()
 {
-	memset(linetexture,0,sizeof(linetexture));
+	memset(&data,0,sizeof(struct RotozoomerData));
 
 	uint8_t *texture=(uint8_t *)0x20000000;
 
@@ -77,19 +74,21 @@ void Rotozoom()
 		int32_t angle=isin(t*9)&1023;
 		int32_t scale=(icos(t*17)+Fix(2))/2;
 
-		dx=imul(scale,icos(angle));
-		dy=imul(scale,isin(angle));
+		int32_t dx=imul(scale,icos(angle));
+		int32_t dy=imul(scale,isin(angle));
+		data.rotozoomer.dx=dx;
+		data.rotozoomer.dy=dy;
 
-		x0=-dx*320-dy*200;
-		y0=-(dy&0xffffff80)*320+dx*200;
-		Pos=PackCoordinates(x0,y0);
-		Delta=PackCoordinates(dx,dy);
+		data.rotozoomer.x0=-dx*320-dy*200;
+		data.rotozoomer.y0=-(dy&0xffffff80)*320+dx*200;
+		data.rotozoomer.pos=PackCoordinates(data.rotozoomer.x0,data.rotozoomer.y0);
+		data.rotozoomer.delta=PackCoordinates(dx,dy);
 
 		for(int y=0;y<400;y++)
 		{
 			int pos=icos(t*20);
-			linetexture[y]=(32*(isin(y*6+pos)+Fix(1))/8192);
-			if(linetexture[y]>31) linetexture[y]=31;
+			data.rotozoomer.texture[y]=(32*(isin(y*6+pos)+Fix(1))/8192);
+			if(data.rotozoomer.texture[y]>31) data.rotozoomer.texture[y]=31;
 		}
 	}
 
@@ -101,10 +100,10 @@ static void RotozoomHSYNCHandler()
 	int line=HandleVGAHSync200();
 	if(line<0) return;
 
-	register uint32_t r0 __asm__("r0")=Pos;
-	register uint32_t r1 __asm__("r1")=Delta;
+	register uint32_t r0 __asm__("r0")=data.rotozoomer.pos;
+	register uint32_t r1 __asm__("r1")=data.rotozoomer.delta;
 	register uint32_t r2 __asm__("r2")=0xf81f;
-	register uint32_t r3 __asm__("r3")=0x20000000+(linetexture[line]<<5);
+	register uint32_t r3 __asm__("r3")=0x20000000+(data.rotozoomer.texture[line]<<5);
 	register uint32_t r4 __asm__("r4")=0x40021015;
 	#define P \
 	"	adcs	r0,r1		\n" \
@@ -149,7 +148,7 @@ static void RotozoomHSYNCHandler()
 
 	((uint8_t *)&GPIOE->ODR)[1]=0;
 
-	x0+=dy;
-	y0-=dx;
-	Pos=PackCoordinates(x0,y0);
+	data.rotozoomer.x0+=data.rotozoomer.dy;
+	data.rotozoomer.y0-=data.rotozoomer.dx;
+	data.rotozoomer.pos=PackCoordinates(data.rotozoomer.x0,data.rotozoomer.y0);
 }
