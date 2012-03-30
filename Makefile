@@ -50,7 +50,9 @@ C_FILES =	Accelerometer.c \
 		VectorLibrary/VectorFixed.c \
 		VectorLibrary/MatrixFixed.c \
 		VectorLibrary/QuaternionFixed.c \
-		Rasterize.c
+		Rasterize.c \
+		Metablobs.c \
+		Blobs.c
 			
 S_FILES = 
 
