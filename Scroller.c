@@ -29,7 +29,10 @@ static uint32_t PackCoordinates(int32_t x,int32_t y)
 
 void Scroller(const char *text)
 {
-//DrawString(currframe,&OLFont,10,10,0,"Look out honey coz I'm using technology");
+	Bitmap textbitmap;
+	InitializeBitmap(&textbitmap,4000,16,4000,(uint8_t *)0x20010000);
+	ClearBitmap(&textbitmap);
+	DrawString(&textbitmap,&OLFont,0,0,0,text);
 
 	memset(&data,0,sizeof(data));
 
@@ -51,12 +54,32 @@ void Scroller(const char *text)
 		data.lines[y].z=idiv(Fix(1000),iabs(Fix(y-200)));
 	}
 
+	for(int i=0;i<8;i++)
+	{
+		data.copper[0][i]=RGB(i*32,0,0);
+		data.copper[0][15-i]=RGB(i*32,0,0);
+		data.copper[1][i]=RGB(i*32,i*32,0);
+		data.copper[1][15-i]=RGB(i*32,i*32,0);
+		data.copper[2][i]=RGB(0,i*32,0);
+		data.copper[2][15-i]=RGB(0,i*32,0);
+		data.copper[3][i]=RGB(0,i*32,i*32);
+		data.copper[3][15-i]=RGB(0,i*32,i*32);
+		data.copper[4][i]=RGB(0,0,i*32);
+		data.copper[4][15-i]=RGB(0,0,i*32);
+		data.copper[5][i]=RGB(i*32,0,i*32);
+		data.copper[5][15-i]=RGB(i*32,0,i*32);
+	}
+
+	data.scanline=0x20010000;
+
 	SetVGAHorizontalSync31kHz(ScrollerHSyncHandler);
 
 	while(!UserButtonState())
 	{
 		WaitVBL();
 		int t=VGAFrameCounter();
+
+		data.scanline=0x20010000;
 
 		SetLEDs(1<<((t/3)&3));
 
@@ -80,6 +103,23 @@ void Scroller(const char *text)
 			x0=-x0;
 			y0=-y0;
 		}
+
+		int copperangle=t*32;
+		int copperphase=copperangle%(4096/6);
+		int coppercol=copperangle/(4096/6);
+
+		int coppery0=FixedToInt(isin(copperphase-512)*16)+16;
+		int coppery1=FixedToInt(isin(copperphase-512+4096*1/6)*16)+16;
+		int coppery2=FixedToInt(isin(copperphase-512+4096*2/6)*16)+16;
+		int coppery3=FixedToInt(isin(copperphase-512+4096*3/6)*16)+16;
+		int coppery4=FixedToInt(isin(copperphase-512+4096*4/6)*16)+16;
+		int coppery5=FixedToInt(isin(copperphase-512+4096*5/6)*16)+16;
+		int coppercol0=((6-coppercol)%6+6)%6;
+		int coppercol1=(coppercol0+1)%6;
+		int coppercol2=(coppercol0+2)%6;
+		int coppercol3=(coppercol0+3)%6;
+		int coppercol4=(coppercol0+4)%6;
+		int coppercol5=(coppercol0+5)%6;
 
 		for(int y=0;y<400;y++)
 		{
@@ -124,6 +164,30 @@ void Scroller(const char *text)
 				data.lines[y].delta=PackCoordinates(sdx,sdy);
 				data.lines[y].texture=RGB(r,g,b);
 			}
+			else if(y<128+48)
+			{
+				int ty=y-128;
+
+				if(ty>=coppery0 && ty<coppery0+16) data.lines[y].texture=data.copper[coppercol0][ty-coppery0];
+				else if(ty>=coppery1 && ty<coppery1+16) data.lines[y].texture=data.copper[coppercol1][ty-coppery1];
+				else if(ty>=coppery5 && ty<coppery5+16) data.lines[y].texture=data.copper[coppercol5][ty-coppery5];
+				else if(ty>=coppery2 && ty<coppery2+16) data.lines[y].texture=data.copper[coppercol2][ty-coppery2];
+				else if(ty>=coppery4 && ty<coppery4+16) data.lines[y].texture=data.copper[coppercol4][ty-coppery4];
+				else if(ty>=coppery3 && ty<coppery3+16) data.lines[y].texture=data.copper[coppercol3][ty-coppery3];
+				else data.lines[y].texture=0;
+			}
+			else if(y>=400-128-48)
+			{
+				int ty=47-(y-(400-128-48));
+
+				if(ty>=coppery0 && ty<coppery0+16) data.lines[y].texture=data.copper[coppercol0][ty-coppery0];
+				else if(ty>=coppery1 && ty<coppery1+16) data.lines[y].texture=data.copper[coppercol1][ty-coppery1];
+				else if(ty>=coppery5 && ty<coppery5+16) data.lines[y].texture=data.copper[coppercol5][ty-coppery5];
+				else if(ty>=coppery2 && ty<coppery2+16) data.lines[y].texture=data.copper[coppercol2][ty-coppery2];
+				else if(ty>=coppery4 && ty<coppery4+16) data.lines[y].texture=data.copper[coppercol4][ty-coppery4];
+				else if(ty>=coppery3 && ty<coppery3+16) data.lines[y].texture=data.copper[coppercol3][ty-coppery3];
+				else data.lines[y].texture=0;
+			}
 		}
 	}
 	while(UserButtonState());
@@ -134,53 +198,95 @@ static void ScrollerHSyncHandler()
 	int line=HandleVGAHSync200();
 	if(line<0) return;
 
-	register uint32_t r0 __asm__("r0")=data.lines[line].pos;
-	register uint32_t r1 __asm__("r1")=data.lines[line].delta;
-	register uint32_t r2 __asm__("r2")=0x8001;
-	register uint32_t r3 __asm__("r3")=0x20000000+(data.lines[line].texture<<1);
-	register uint32_t r4 __asm__("r4")=0x40021015;
-	#define P \
-	"	adcs	r0,r1		\n" \
-	"	and		r5,r0,r2	\n" \
-	"	ldrb	r6,[r3,r5]	\n" \
-	"	strb	r6,[r4]		\n"
+	if(line<128||line>=400-128)
+	{
+		register uint32_t r0 __asm__("r0")=data.lines[line].pos;
+		register uint32_t r1 __asm__("r1")=data.lines[line].delta;
+		register uint32_t r2 __asm__("r2")=0x8001;
+		register uint32_t r3 __asm__("r3")=0x20000000+(data.lines[line].texture<<1);
+		register uint32_t r4 __asm__("r4")=0x40021015;
+		#define P \
+		"	adcs	r0,r1		\n" \
+		"	and		r5,r0,r2	\n" \
+		"	ldrb	r6,[r3,r5]	\n" \
+		"	strb	r6,[r4]		\n"
+					
+		__asm__ volatile(
+		"	b		.start		\n"
+		"	.align 4	\n"
+		".start:	\n"
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+	
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+					
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		#undef P
 				
-	__asm__ volatile(
-	"	b		.start		\n"
-	"	.align 4	\n"
-	".start:	\n"
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		".end:	\n"
+		:
+		: "r" (r0), "r" (r1), "r" (r2), "r" (r3), "r" (r4)
+		:"r5","r6");
+	
+		((uint8_t *)&GPIOE->ODR)[1]=0;
+	}
+	else if(line>=200-8 && line<200+8)
+	{
+		register uint32_t r0 __asm__("r0")=data.scanline;
+		register uint32_t r1 __asm__("r1")=((uint32_t)&GPIOE->ODR)+1;
+		register uint32_t r2 __asm__("r2")=120;
 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		__asm__ volatile(
+		"0:						\n"
+		"	ldrb	r3,[r0]		\n"
+		"	strb	r3,[r1]		\n"
+		"	add		r0,r0,#1	\n"
+		"	nop					\n"
+		"	nop					\n"
+		"	nop					\n"
+		"	subs	r2,r2,#1	\n"
+		"	bne		0b			\n"
+		:
+		:"r" (r0), "r" (r1), "r" (r2)
+		:"r3");
 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
+		((uint8_t *)&GPIOE->ODR)[1]=0;
+		data.scanline+=4000;
+	}
+	else
+	{
+		((uint8_t *)&GPIOE->ODR)[1]=data.lines[line].texture;
 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-				
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P  P P P P 
-	#undef P
-			
-	".end:	\n"
-	:
-	: "r" (r0), "r" (r1), "r" (r2), "r" (r3), "r" (r4)
-	:"r5","r6");
+		register uint32_t r0 __asm__("r0")=1500;
 
-	((uint8_t *)&GPIOE->ODR)[1]=0;
+		__asm__ volatile(
+		"0:						\n"
+		"	subs	r0,r0,#1	\n"
+		"	bne		0b			\n"
+		:
+		: "r" (r0)
+		:);
+
+		((uint8_t *)&GPIOE->ODR)[1]=0;
+	}
 }
 
 static uint32_t sqrti(uint32_t n)
