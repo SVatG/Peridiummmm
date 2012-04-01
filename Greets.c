@@ -12,6 +12,7 @@
 #endif //TESTING
 
 extern glyph_t font_enri_glyph[];
+extern glyph_t revision_logo_glyph[];
 
 greet_t greets[] = {
     { {0,0}, NULL, 0, false}, // filler
@@ -36,7 +37,7 @@ greet_t greets[] = {
 int greetindex;
 greet_t *gprev, *gcur, *gnext;
 int tick;
-bool done = false;
+bool done;
 point_t textpts1[200];
 point_t textpts2[200];
 
@@ -45,7 +46,13 @@ void greets_init(){
     gprev = greets+0;
     gcur = greets+1;
     gnext = greets+2;
-    int tick=-1;
+    tick=-1;
+    done = false;
+}
+
+void logo_init(){
+    tick = -1;
+    done = false;
 }
 
 #ifndef TESTING
@@ -83,8 +90,54 @@ void Greets(){
 	while(UserButtonState() && (!done));
 }
 
+void RevisionLogo(){
+	uint8_t *framebuffer1=(uint8_t *)0x20000000;
+	uint8_t *framebuffer2=(uint8_t *)0x20010000;
+	memset(framebuffer1,0,320*200);
+	memset(framebuffer2,0,320*200);
+
+	SetVGAScreenMode320x200(framebuffer1);
+
+
+    glyph_t glyph = font_enri_glyph[50];
+
+	Bitmap frame1,frame2;
+	InitializeBitmap(&frame1,320,200,320,framebuffer1);
+	InitializeBitmap(&frame2,320,200,320,framebuffer2);
+	Bitmap *currframe = &frame1;
+    
+    logo_init();
+
+	while(!UserButtonState() && (!done))
+	{
+		WaitVBL();
+
+        if(currframe == &frame1) { currframe=&frame2; SetFrameBuffer(framebuffer1); }
+        else { currframe=&frame1; SetFrameBuffer(framebuffer2); }
+
+        ClearBitmap(currframe);
+
+        logo_inner(currframe);
+
+	}
+
+	while(UserButtonState() && (!done));
+}
 #endif //TESTING
 
+void logo_inner(Bitmap* currframe){
+    tick++;
+    point_t p={100,70};
+    if(tick<100){
+        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, tick);
+    } else if(tick < 200){
+        render_text(currframe, " ", p, 100, revision_logo_glyph);
+    } else if(tick < 300){
+        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, tick-100);
+    } else {
+        done = true;
+    }
+}
 
 void greets_inner(Bitmap* currframe){
 

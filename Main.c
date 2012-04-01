@@ -47,6 +47,7 @@ int main()
 
 	for(;;)
 	{
+        RevisionLogo();
 		Greets();
 		LogoShow();
 		SpanScreen();

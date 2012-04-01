@@ -14,7 +14,9 @@ typedef struct{
 
 void greets_init();
 void greets_inner(Bitmap* currframe);
+void logo_inner(Bitmap* currframe);
 void Greets();
+void RevisionLogo();
 
 bool isdone();
 

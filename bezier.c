@@ -1,10 +1,10 @@
+//#include "main.h"
 #include "bezier.h"
 #include <stdlib.h>
 #include <stdio.h>
 
 #define WIDTH 320
 #define HEIGHT 200
-
 
 void bezier_draw_path_partial(Bitmap *dest, bezier_t *data, int len, int percent){
     for(int i=0; i<len; ++i){
