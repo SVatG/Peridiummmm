@@ -1,4 +1,5 @@
 #include "Epileptor.h"
+#include "Global.h"
 #include "VGA.h"
 #include "LED.h"
 #include "Button.h"
@@ -14,26 +15,22 @@ static void DrawBlob(Bitmap *bitmap,int x0,int y0,int c);
 
 void Epileptor()
 {
-	static uint8_t palette[18]=
-	{
-		RawRGB(7,0,0),RawRGB(7,2,0),RawRGB(7,5,0),
-		RawRGB(7,7,0),RawRGB(5,7,0),RawRGB(2,7,0),
-		RawRGB(0,7,0),RawRGB(0,7,1),RawRGB(0,7,2),
-		RawRGB(0,7,3),RawRGB(0,5,3),RawRGB(0,2,3),
-		RawRGB(0,0,3),RawRGB(2,0,3),RawRGB(5,0,3),
-		RawRGB(7,0,3),RawRGB(7,0,2),RawRGB(7,0,1),
-	};
-
-	static uint8_t replacements[256];
-
 	uint8_t *framebuffer1=(uint8_t *)0x20000000;
 	uint8_t *framebuffer2=(uint8_t *)0x20010000;
 	memset(framebuffer1,0,320*200);
 	memset(framebuffer2,0,320*200);
 
-	for(int i=0;i<sizeof(palette);i++)
+	for(int i=0;i<256;i++)
 	{
-		replacements[palette[i]]=palette[(i+1)%sizeof(palette)];
+		int r=ExtractRawRed(i);
+		int g=ExtractRawGreen(i);
+		int b=ExtractRawBlue(i);
+
+		if(r) r--;
+		if(g) g--;
+		if(b) b--;
+
+		data.epileptor.replacements[i]=RawRGB(r,g,b);
 	}
 
 	SetVGAScreenMode320x200(framebuffer1);
@@ -55,7 +52,7 @@ void Epileptor()
 			SetFrameBuffer(framebuffer1);
 
 			for(int j=0;j<320*200;j++)
-			framebuffer2[j]=replacements[framebuffer1[j]];
+			framebuffer2[j]=data.epileptor.replacements[framebuffer1[j]];
 		}
 		else
 		{
@@ -63,7 +60,7 @@ void Epileptor()
 			SetFrameBuffer(framebuffer2);
 
 			for(int j=0;j<320*200;j++)
-			framebuffer1[j]=replacements[framebuffer2[j]];
+			framebuffer1[j]=data.epileptor.replacements[framebuffer2[j]];
 		}
 
 		SetLEDs(1<<((t/3)&3));
@@ -83,7 +80,11 @@ void Epileptor()
 			int x=160+((imul(sin1,sin4)+imul(sin2,sin3)/2)>>5);
 			int y=100+((imul(cos1,sin4)+imul(cos2,sin3)/2)>>5);
 
-			DrawBlob(currframe,x,y,palette[0]);
+			DrawBlob(currframe,x,y,RGB(
+			FixedToInt(255*(isin(32*t)+Fix(1))/2),
+			FixedToInt(255*(isin(32*t+4096/3)+Fix(1))/2),
+			FixedToInt(255*(isin(32*t+4096*2/3)+Fix(1))/2)
+			));
 		}
 
 		t++;

@@ -92,6 +92,8 @@ void Rotozoom()
 		}
 	}
 
+	SetBlankVGAScreenMode200();
+
 	while(UserButtonState());
 }
 
@@ -146,7 +148,7 @@ static void RotozoomHSYNCHandler()
 	: "r" (r0), "r" (r1), "r" (r2), "r" (r3), "r" (r4)
 	:"r5","r6");
 
-	((uint8_t *)&GPIOE->ODR)[1]=0;
+	SetVGASignalToBlack();
 
 	data.rotozoomer.x0+=data.rotozoomer.dy;
 	data.rotozoomer.y0-=data.rotozoomer.dx;

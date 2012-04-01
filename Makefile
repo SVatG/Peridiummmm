@@ -31,6 +31,7 @@ C_FILES =	Accelerometer.c \
 		Random.c \
 		Rotozoomer.c \
 		Scroller.c \
+		SpanScreen.c \
 		Sprites.c \
 		Starfield.c \
 		Startup.c \
