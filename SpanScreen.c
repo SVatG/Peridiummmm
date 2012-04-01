@@ -59,6 +59,14 @@ void SpanScreen()
 {
 	EnableAPB2PeripheralClock(RCC_APB2ENR_TIM1EN);
 
+	uint8_t palettes[3][256];
+	for(int i=0;i<256;i++)
+	{
+		palettes[0][i]=RGB(i*2,i*2,i*9/4);
+		palettes[1][i]=RGB(i*3,i*3-256,i*2);
+		palettes[2][i]=RGB(i*3-256,i*2,i*3);
+	}
+
 	uint16_t *timepointer=data.spanscreen.times[0];
 	uint8_t *colourpointer=data.spanscreen.colours[0];
 	for(int y=0;y<400;y++)
@@ -141,15 +149,19 @@ void SpanScreen()
 				int x2=sin_a/16-cos_a/8+center;
 				int x3=-sin_a/16-cos_a/8+center;
 				int x4=-sin_a/16+cos_a/8+center;
-				int c1=(depth*(-sin_a+cos_a+Fix(2)))>>19;
-				int c2=(depth*(-sin_a-cos_a+Fix(2)))>>19;
-				int c3=(depth*(sin_a-cos_a+Fix(2)))>>19;
-				int c4=(depth*(sin_a+cos_a+Fix(2)))>>19;
+				int c1=(depth*(-sin_a+cos_a+Fix(2)))>>20;
+				int c2=(depth*(-sin_a-cos_a+Fix(2)))>>20;
+				int c3=(depth*(sin_a-cos_a+Fix(2)))>>20;
+				int c4=(depth*(sin_a+cos_a+Fix(2)))>>20;
+				if(c1>256) c1=255;
+				if(c2>256) c2=255;
+				if(c3>256) c3=255;
+				if(c4>256) c4=255;
 
-				AddSpan(spans,x1,x2,RGB(c1,c1,c1));
-				AddSpan(spans,x2,x3,RGB(c2,c2,c2));
-				AddSpan(spans,x3,x4,RGB(c3,c3,c3));
-				AddSpan(spans,x4,x1,RGB(c4,c4,c4));
+				AddSpan(spans,x1,x2,palettes[n][c1]);
+				AddSpan(spans,x2,x3,palettes[n][c2]);
+				AddSpan(spans,x3,x4,palettes[n][c3]);
+				AddSpan(spans,x4,x1,palettes[n][c4]);
 			}
 
 			for(Span *span=spans;span->end!=0xffff;span++)
