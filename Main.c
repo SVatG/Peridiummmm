@@ -19,6 +19,7 @@
 #include "Epileptor.h"
 #include "Scroller.h"
 #include "LogoShow.h"
+#include "Greets.h"
 
 static void AudioCallback(void *context,int buffer);
 int16_t *buffers[2]={ (int16_t *)0x2001fa00,(int16_t *)0x2001fc00 };

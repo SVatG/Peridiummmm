@@ -48,10 +48,10 @@ C_FILES =	Accelerometer.c \
 		Graphics/DrawingStraightLines.c \
 		Graphics/Font.c \
 		VectorLibrary/Integer.c \
-		ryx/font.c \
-		ryx/bezier.c \
-		ryx/Greets.c \
-		ryx/font_enri.c \
+		font.c \
+		bezier.c \
+		Greets.c \
+		font_enri.c \
 		VectorLibrary/VectorFixed.c \
 		VectorLibrary/MatrixFixed.c \
 		VectorLibrary/QuaternionFixed.c \
@@ -69,6 +69,7 @@ ALL_CFLAGS = $(C_OPTS) $(DEFINES) $(CFLAGS)
 ALL_LDFLAGS = $(LD_FLAGS) -mthumb -mcpu=cortex-m4 -nostartfiles -Wl,-T,Linker.ld,--gc-sections -specs Terrible.specs
 
 AUTODEPENDENCY_CFLAGS=-MMD -MF$(@:.o=.d) -MT$@
+
 
 
 
@@ -98,6 +99,9 @@ $(NAME).bin: $(NAME).elf
 
 $(NAME).elf: $(OBJS)
 	$(LD) $(ALL_LDFLAGS) -o $@ $^ $(LIBS)
+
+#font_enri.c: fontToBezier.py
+#	python fontToBezier.py
 
 .SUFFIXES: .o .c .S
 
