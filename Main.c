@@ -18,7 +18,7 @@
 #include "Rasterize.h"
 #include "Epileptor.h"
 #include "Scroller.h"
-#include "ryx/Greets.h"
+#include "LogoShow.h"
 
 static void AudioCallback(void *context,int buffer);
 int16_t *buffers[2]={ (int16_t *)0x2001fa00,(int16_t *)0x2001fc00 };
@@ -36,17 +36,18 @@ int main()
 	InitializeUserButton();
 
 	BitBinSong song;
-	InitializeBitBinSong(&song,BitBin22kTable,8,channels);
+	InitializeBitBinSong(&song,BitBin22kTable,8,1792,channels);
 
 	InitializeAudio(Audio22050HzSettings);
-	SetAudioVolume(0xaf);
+	SetAudioVolume(0xEF);
 	PlayAudioWithCallback(AudioCallback,&song);
 
 	InitializeVGAScreenMode200();
 
 	for(;;)
 	{
-        Greets();
+		Greets();
+		LogoShow();
 		SpanScreen();
 		Epileptor();
 		Starfield();

@@ -4,6 +4,7 @@
 #include "LED.h"
 #include "Button.h"
 #include "Utils.h"
+#include "RCC.h"
 
 #include "Graphics/Pixels.h"
 
@@ -56,21 +57,43 @@ static inline void AddSpan(Span *spans,int32_t x1,int32_t x2,uint8_t col)
 
 void SpanScreen()
 {
-	// Configure timer 8 as the pixel clock.
-	TIM8->CR1=TIM_CR1_OPM; // Upcounting mode, one pulse.
-	TIM8->DIER=TIM_DIER_CC1IE|TIM_DIER_UIE; // Enable compare interrupts 1, 2, 3 and 4, and update interrupt.
-	TIM8->PSC=0; // Prescaler = 1
-	TIM8->ARR=4200;
+	EnableAPB2PeripheralClock(RCC_APB2ENR_TIM1EN);
 
-	InstallInterruptHandler(TIM8_UP_TIM13_IRQn,UpdateInterruptHandler);
-	EnableInterrupt(TIM8_UP_TIM13_IRQn);
-	SetInterruptPriority(TIM8_UP_TIM13_IRQn,0);
+	uint8_t palettes[3][256];
+	for(int i=0;i<256;i++)
+	{
+		palettes[0][i]=RGB(i*2,i*2,i*9/4);
+		palettes[1][i]=RGB(i*3,i*3-256,i*2);
+		palettes[2][i]=RGB(i*3-256,i*2,i*3);
+	}
 
-	InstallInterruptHandler(TIM8_CC_IRQn,CompareInterruptHandler);
-	EnableInterrupt(TIM8_CC_IRQn);
-	SetInterruptPriority(TIM8_CC_IRQn,0);
+	uint16_t *timepointer=data.spanscreen.times[0];
+	uint8_t *colourpointer=data.spanscreen.colours[0];
+	for(int y=0;y<400;y++)
+	{
+		*colourpointer++=RGB(0,0,0);
+		*timepointer++=0xffff;
+	}
+	data.spanscreen.timepointer=data.spanscreen.times[0];
+	data.spanscreen.colourpointer=data.spanscreen.colours[0];
 
+	WaitVBL();
 	SetVGAHorizontalSync31kHz(SpanHSyncHandler);
+
+	// Configure timer 1 as the pixel clock.
+	TIM1->CR1=TIM_CR1_OPM; // Upcounting mode, one pulse.
+	TIM1->DIER=TIM_DIER_CC1IE|TIM_DIER_UIE; // Enable compare interrupts 1, 2, 3 and 4, and update interrupt.
+	TIM1->PSC=0; // Prescaler = 1
+	TIM1->ARR=4100;
+	TIM1->SR=0;
+
+	InstallInterruptHandler(TIM1_UP_TIM10_IRQn,UpdateInterruptHandler);
+	SetInterruptPriority(TIM1_UP_TIM10_IRQn,0);
+	EnableInterrupt(TIM1_UP_TIM10_IRQn);
+
+	InstallInterruptHandler(TIM1_CC_IRQn,CompareInterruptHandler);
+	SetInterruptPriority(TIM1_CC_IRQn,0);
+	EnableInterrupt(TIM1_CC_IRQn);
 
 	int frame=0;
 
@@ -119,22 +142,26 @@ void SpanScreen()
 				int32_t sin_a=isin(angle);
 				int32_t cos_a=icos(angle);
 
-				int center=isin(mainangle+n*((4096+2)/3))/3+2100;
+				int center=isin(mainangle+n*((4096+2)/3))/3+2050;
 				int depth=icos(mainangle+n*((4096+2)/3))+Fix(2);
 
 				int x1=sin_a/16+cos_a/8+center;
 				int x2=sin_a/16-cos_a/8+center;
 				int x3=-sin_a/16-cos_a/8+center;
 				int x4=-sin_a/16+cos_a/8+center;
-				int c1=(depth*(-sin_a+cos_a+Fix(2)))>>19;
-				int c2=(depth*(-sin_a-cos_a+Fix(2)))>>19;
-				int c3=(depth*(sin_a-cos_a+Fix(2)))>>19;
-				int c4=(depth*(sin_a+cos_a+Fix(2)))>>19;
+				int c1=(depth*(-sin_a+cos_a+Fix(2)))>>20;
+				int c2=(depth*(-sin_a-cos_a+Fix(2)))>>20;
+				int c3=(depth*(sin_a-cos_a+Fix(2)))>>20;
+				int c4=(depth*(sin_a+cos_a+Fix(2)))>>20;
+				if(c1>256) c1=255;
+				if(c2>256) c2=255;
+				if(c3>256) c3=255;
+				if(c4>256) c4=255;
 
-				AddSpan(spans,x1,x2,RGB(c1,c1,c1));
-				AddSpan(spans,x2,x3,RGB(c2,c2,c2));
-				AddSpan(spans,x3,x4,RGB(c3,c3,c3));
-				AddSpan(spans,x4,x1,RGB(c4,c4,c4));
+				AddSpan(spans,x1,x2,palettes[n][c1]);
+				AddSpan(spans,x2,x3,palettes[n][c2]);
+				AddSpan(spans,x3,x4,palettes[n][c3]);
+				AddSpan(spans,x4,x1,palettes[n][c4]);
 			}
 
 			for(Span *span=spans;span->end!=0xffff;span++)
@@ -151,9 +178,9 @@ void SpanScreen()
 
 	WaitVBL();
 	SetBlankVGAScreenMode200();
-	DisableInterrupt(TIM8_UP_TIM13_IRQn);
-	DisableInterrupt(TIM8_CC_IRQn);
-	TIM8->CR1=0;
+	DisableInterrupt(TIM1_UP_TIM10_IRQn);
+	DisableInterrupt(TIM1_CC_IRQn);
+	TIM1->CR1=0;
 
 	while(UserButtonState());
 }
@@ -165,7 +192,7 @@ static void SpanHSyncHandler()
 	int line=HandleVGAHSync200();
 	if(line<0) return;
 
-	TIM8->CR1|=TIM_CR1_CEN; // Start timer;
+	TIM1->CR1|=TIM_CR1_CEN; // Start timer;
 
 	uint8_t *colptr=data.spanscreen.colourpointer;
 	uint16_t *timeptr=data.spanscreen.timepointer;
@@ -174,9 +201,9 @@ static void SpanHSyncHandler()
 
 	uint16_t nexttime=*timeptr++;
 
-	while(nexttime<TIM8->CNT+100)
+	while(nexttime<TIM1->CNT+100)
 	{
-		while(TIM8->CNT<nexttime);
+		while(TIM1->CNT<nexttime);
 		SetVGASignal(*colptr++);
 		nexttime=*timeptr++;
 	}
@@ -184,28 +211,28 @@ static void SpanHSyncHandler()
 	data.spanscreen.colourpointer=colptr;
 	data.spanscreen.timepointer=timeptr;
 
-	TIM8->CCR1=nexttime-30;
+	TIM1->CCR1=nexttime-30;
 
 stopped=false;
-//	EnableInterrupt(TIM8_CC_IRQn);
+//	EnableInterrupt(TIM1_CC_IRQn);
 }
 
 
 static void UpdateInterruptHandler()
 {
-	uint32_t sr=TIM8->SR;
-	TIM8->SR=0;
+	uint32_t sr=TIM1->SR;
+	TIM1->SR=0;
 
 	SetVGASignalToBlack();
 
 stopped=true;
-//	DisableInterrupt(TIM8_CC_IRQn);
+//	DisableInterrupt(TIM1_CC_IRQn);
 }
 
 static void CompareInterruptHandler()
 {
-	uint32_t sr=TIM8->SR;
-	TIM8->SR=0;
+	uint32_t sr=TIM1->SR;
+	TIM1->SR=0;
 if(stopped) return;
 
 	uint8_t *colptr=data.spanscreen.colourpointer;
@@ -215,9 +242,9 @@ if(stopped) return;
 
 	uint16_t nexttime=*timeptr++;
 
-	while(nexttime<TIM8->CNT+100)
+	while(nexttime<TIM1->CNT+100)
 	{
-		while(TIM8->CNT<nexttime);
+		while(TIM1->CNT<nexttime);
 		SetVGASignal(*colptr++);
 		nexttime=*timeptr++;
 	}
@@ -225,5 +252,5 @@ if(stopped) return;
 	data.spanscreen.colourpointer=colptr;
 	data.spanscreen.timepointer=timeptr;
 
-	TIM8->CCR1=nexttime-30;
+	TIM1->CCR1=nexttime-30;
 }
