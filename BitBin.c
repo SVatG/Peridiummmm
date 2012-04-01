@@ -277,8 +277,8 @@ static void UpdateChannelAtNonRowTick(BitBinSong *self,BitBinChannel *channel)
 			switch(channel->vibratophase%3)
 			{
 				case 0: channel->vibrato=0; break;
-				case 1: channel->vibrato=hi; break;
-				case 2: channel->vibrato=lo; break;
+				case 1: channel->vibrato=hi<<4; break;
+				case 2: channel->vibrato=lo<<4; break;
 			}
 			channel->vibratophase++;
 		break;
