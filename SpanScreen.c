@@ -59,15 +59,15 @@ void SpanScreen()
 {
 	EnableAPB2PeripheralClock(RCC_APB2ENR_TIM1EN);
 
-	uint16_t *timepointer=data.spanscreen.times[1];
-	uint8_t *colourpointer=data.spanscreen.colours[1];
+	uint16_t *timepointer=data.spanscreen.times[0];
+	uint8_t *colourpointer=data.spanscreen.colours[0];
 	for(int y=0;y<400;y++)
 	{
 		*colourpointer++=RGB(0,0,0);
 		*timepointer++=0xffff;
 	}
-	data.spanscreen.timepointer=data.spanscreen.times[1];
-	data.spanscreen.colourpointer=data.spanscreen.colours[1];
+	data.spanscreen.timepointer=data.spanscreen.times[0];
+	data.spanscreen.colourpointer=data.spanscreen.colours[0];
 
 	WaitVBL();
 	SetVGAHorizontalSync31kHz(SpanHSyncHandler);
@@ -77,14 +77,15 @@ void SpanScreen()
 	TIM1->DIER=TIM_DIER_CC1IE|TIM_DIER_UIE; // Enable compare interrupts 1, 2, 3 and 4, and update interrupt.
 	TIM1->PSC=0; // Prescaler = 1
 	TIM1->ARR=4100;
+	TIM1->SR=0;
 
 	InstallInterruptHandler(TIM1_UP_TIM10_IRQn,UpdateInterruptHandler);
-	EnableInterrupt(TIM1_UP_TIM10_IRQn);
 	SetInterruptPriority(TIM1_UP_TIM10_IRQn,0);
+	EnableInterrupt(TIM1_UP_TIM10_IRQn);
 
 	InstallInterruptHandler(TIM1_CC_IRQn,CompareInterruptHandler);
-	EnableInterrupt(TIM1_CC_IRQn);
 	SetInterruptPriority(TIM1_CC_IRQn,0);
+	EnableInterrupt(TIM1_CC_IRQn);
 
 	int frame=0;
 
