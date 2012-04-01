@@ -48,10 +48,10 @@ int main()
 	for(;;)
 	{
 		Rasterize();		
-		LogoShow();		
+		Epileptor();
+		LogoShow();
 		Greets();
 		SpanScreen();
-		Epileptor();
 		Starfield();
 		Metablobs();
 		Scroller("Look out honey coz I'm using technology, ain't got time to make no apology");

@@ -93,10 +93,10 @@ void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat
 	int32_t leftVd;
 
 	// color and color x deltas
-	int32_t colR;
-	int32_t colG;
-	int32_t colRdX;
-	int32_t colGdX;
+	int32_t U;
+	int32_t V;
+	int32_t UdX;
+	int32_t VdX;
 
 	// calculate y differences
 	int32_t upperDiff = upperVertex.p.y - centerVertex.p.y;
@@ -118,8 +118,8 @@ void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat
 	if(width == 0) {
 		return;
 	}
-	colRdX = idiv(imul(temp, (R(lowerVertex.c)-R(upperVertex.c))) + (R(upperVertex.c)-R(centerVertex.c)),width);
-	colGdX = idiv(imul(temp, (G(lowerVertex.c)-G(upperVertex.c))) + (G(upperVertex.c)-G(centerVertex.c)),width);
+	UdX = idiv(imul(temp, (R(lowerVertex.c)-R(upperVertex.c))) + (R(upperVertex.c)-R(centerVertex.c)),width);
+	VdX = idiv(imul(temp, (G(lowerVertex.c)-G(upperVertex.c))) + (G(upperVertex.c)-G(centerVertex.c)),width);
 
 	// guard against special case B: flat upper edge
 	if(upperDiff == 0 ) {
@@ -174,25 +174,25 @@ void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat
 		leftVd = idiv(leftV - (IntToFixed(lowerVertex.c & (7 << 2))>>2), lowerDiff);
 	}
 
-	colR = leftU;
-	colG = leftV;
+	U = leftU;
+	V = leftV;
 	
 	scanlineMax = FixedToRoundedInt(centerVertex.p.y);
 	for(scanline = FixedToRoundedInt(upperVertex.p.y); scanline < scanlineMax; scanline++ ) {
 		int32_t xMax = FixedToRoundedInt(rightX);
 		for(int32_t x = FixedToRoundedInt(leftX); x <= xMax; x++) {
-			image[x+scanline*WIDTH] = (FixedToInt(colR)<<5) | (FixedToInt(colG)<<2) | 2;
-			colR += colRdX;
-			colG += colGdX;
-			colR = colR < 0 ? 0 : colR & 0x7FFF;
-			colG = colG < 0 ? 0 : colG & 0x7FFF;
+			image[x+scanline*WIDTH] = (FixedToInt(U)<<5) | (FixedToInt(V)<<2) | 2;
+			U += UdX;
+			V += VdX;
+			U = U < 0 ? 0 : U & 0x7FFF;
+			V = V < 0 ? 0 : V & 0x7FFF;
 		}
 		leftX += leftXd;
 		rightX += rightXd;
 		leftU += leftUd;
-		colR = leftU;
+		U = leftU;
 		leftV += leftVd;
-		colG = leftV;
+		V = leftV;
 	}
 
 	// Guard against special case C: flat lower edge
@@ -222,24 +222,24 @@ lower_half_render:
 	// lower triangle half
 	scanlineMax = FixedToRoundedInt(lowerVertex.p.y);
 
-	colR = leftU;
-	colG = leftV;
+	U = leftU;
+	V = leftV;
 	
 	for(scanline = FixedToRoundedInt(centerVertex.p.y); scanline < scanlineMax; scanline++ ) {
 		int32_t xMax = FixedToRoundedInt(rightX);
 		for(int32_t x = FixedToRoundedInt(leftX); x <= xMax; x++) {
-			image[x+scanline*WIDTH] = (FixedToInt(colR)<<5) | (FixedToInt(colG)<<2) | 2;
-			colR += colRdX;
-			colG += colGdX;
-			colR = colR < 0 ? 0 : colR & 0x7FFF;
-			colG = colG < 0 ? 0 : colG & 0x7FFF;
+			image[x+scanline*WIDTH] = (FixedToInt(U)<<5) | (FixedToInt(V)<<2) | 2;
+			U += UdX;
+			V += VdX;
+			U = U < 0 ? 0 : U & 0x7FFF;
+			V = V < 0 ? 0 : V & 0x7FFF;
 		}
 		leftX += leftXd;
 		rightX += rightXd;
 		leftU += leftUd;
-		colR = leftU;
+		U = leftU;
 		leftV += leftVd;
-		colG = leftV;
+		V = leftV;
 	}
 }
 
