@@ -312,6 +312,8 @@ static void Fonttest(){
 	uint8_t *framebuffer2=(uint8_t *)0x20010000;
 	memset(framebuffer1,0,320*200);
 	memset(framebuffer2,0,320*200);
+    static point_t textpts1[200];
+    static point_t textpts2[200];
 
 	SetVGAScreenMode320x200(framebuffer1);
 
@@ -338,7 +340,34 @@ static void Fonttest(){
 		ClearBitmap(currframe);
 
         point_t p={40,10};
-        render_text(currframe, "foobar bazquuux",p, 30, font_enri_glyph);
+        point_t p2={40,80};
+        if(frame<200){
+            render_text_partial(currframe, "mercury",p, 70, font_enri_glyph, frame);
+        }
+        if(frame>=100 && frame<300){
+            int a = 100;
+            int b = 100;
+            get_text_points(textpts1, &a, "mercury",p, 70,font_enri_glyph, false);
+            get_text_points(textpts2, &b, "nuance",p2, 70,font_enri_glyph, true);
+            make_transition(currframe, textpts1, a, textpts2, b, frame-100);
+            if(frame==105){
+    //            printf("%i, %i\n",a,b);
+            }
+        }
+        if(frame>=200 && frame<400){
+            render_text_partial(currframe, "nuance",p2, 70, font_enri_glyph, frame-200);
+        }
+        if(frame>=400){
+            frame = 0;
+        }
+
+        point_t p3 = {0,170};
+        char s[10];
+        s[0] = (frame/100)%10 + '0';
+        s[1] = (frame/10)%10 + '0';
+        s[2] = (frame)%10 + '0';
+        render_text_partial(currframe, s ,p, 70, font_enri_glyph, frame);
+
 
 
 
