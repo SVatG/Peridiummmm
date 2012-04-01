@@ -87,20 +87,16 @@ void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat
 	int32_t rightXd;
 
 	// left color and color delta
-	int32_t leftColR;
-	int32_t leftColG;
-	int32_t leftColB;
-	int32_t leftColRd;
-	int32_t leftColGd;
-	int32_t leftColBd;
+	int32_t leftU;
+	int32_t leftV;
+	int32_t leftUd;
+	int32_t leftVd;
 
 	// color and color x deltas
 	int32_t colR;
 	int32_t colG;
-	int32_t colB;
 	int32_t colRdX;
 	int32_t colGdX;
-	int32_t colBdX;
 
 	// calculate y differences
 	int32_t upperDiff = upperVertex.p.y - centerVertex.p.y;
@@ -124,16 +120,14 @@ void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat
 	}
 	colRdX = idiv(imul(temp, (R(lowerVertex.c)-R(upperVertex.c))) + (R(upperVertex.c)-R(centerVertex.c)),width);
 	colGdX = idiv(imul(temp, (G(lowerVertex.c)-G(upperVertex.c))) + (G(upperVertex.c)-G(centerVertex.c)),width);
-	colBdX = idiv(imul(temp, (B(lowerVertex.c)-B(upperVertex.c))) + (B(upperVertex.c)-B(centerVertex.c)),width);
 
 	// guard against special case B: flat upper edge
 	if(upperDiff == 0 ) {
 
 		if(upperVertex.p.x < centerVertex.p.x) {
 			leftX = upperVertex.p.x;
-			leftColR = IntToFixed(upperVertex.c & (7 << 5))>>5;
-			leftColG = IntToFixed(upperVertex.c & (7 << 2))>>2;
-			leftColB = IntToFixed(upperVertex.c & (3));
+			leftU = IntToFixed(upperVertex.c & (7 << 5))>>5;
+			leftV = IntToFixed(upperVertex.c & (7 << 2))>>2;
 			rightX = centerVertex.p.x;
 
 			leftXd = idiv(upperVertex.p.x - lowerVertex.p.x, lowerDiff);
@@ -141,18 +135,16 @@ void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat
 		}
 		else {
 			leftX = centerVertex.p.x;
-			leftColR = IntToFixed(centerVertex.c & (7 << 5))>>5;
-			leftColG = IntToFixed(centerVertex.c & (7 << 2))>>2;
-			leftColB = IntToFixed(centerVertex.c & (3));
+			leftU = IntToFixed(centerVertex.c & (7 << 5))>>5;
+			leftV = IntToFixed(centerVertex.c & (7 << 2))>>2;
 			rightX = upperVertex.p.x;
 
 			leftXd = idiv(centerVertex.p.x - lowerVertex.p.x, lowerDiff);
 			rightXd = idiv(upperVertex.p.x - lowerVertex.p.x, lowerDiff);
 		}
 
-		leftColRd = idiv(leftColR - (IntToFixed(lowerVertex.c & (7 << 5))>>5), lowerDiff);
-		leftColGd = idiv(leftColG - (IntToFixed(lowerVertex.c & (7 << 2))>>2), lowerDiff);
-		leftColBd = idiv(leftColB - (IntToFixed(lowerVertex.c & (3))), lowerDiff);
+		leftUd = idiv(leftU - (IntToFixed(lowerVertex.c & (7 << 5))>>5), lowerDiff);
+		leftVd = idiv(leftV - (IntToFixed(lowerVertex.c & (7 << 2))>>2), lowerDiff);
 
 		goto lower_half_render;
 	}
@@ -164,52 +156,43 @@ void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat
 	// upper triangle half
 	leftX = rightX = upperVertex.p.x;
 
-	leftColR = IntToFixed(upperVertex.c & (7 << 5))>>5;
-	leftColG = IntToFixed(upperVertex.c & (7 << 2))>>2;
-	leftColB = IntToFixed(upperVertex.c & (3));
-
+	leftU = IntToFixed(upperVertex.c & (7 << 5))>>5;
+	leftV = IntToFixed(upperVertex.c & (7 << 2))>>2;
 
 	if(upperCenter < upperLower) {
 		leftXd = upperCenter;
 		rightXd = upperLower;
 
-		leftColRd = idiv(leftColR - (IntToFixed(centerVertex.c & (7 << 5))>>5), upperDiff);
-		leftColGd = idiv(leftColG - (IntToFixed(centerVertex.c & (7 << 2))>>2), upperDiff);
-		leftColBd = idiv(leftColB - (IntToFixed(centerVertex.c & (3))), upperDiff);
+		leftUd = idiv(leftU - (IntToFixed(centerVertex.c & (7 << 5))>>5), upperDiff);
+		leftVd = idiv(leftV - (IntToFixed(centerVertex.c & (7 << 2))>>2), upperDiff);
 	}
 	else {
 		leftXd = upperLower;
 		rightXd = upperCenter;
 
-		leftColRd = idiv(leftColR - (IntToFixed(lowerVertex.c & (7 << 5))>>5), lowerDiff);
-		leftColGd = idiv(leftColG - (IntToFixed(lowerVertex.c & (7 << 2))>>2), lowerDiff);
-		leftColBd = idiv(leftColB - (IntToFixed(lowerVertex.c & (3))), lowerDiff);
+		leftUd = idiv(leftU - (IntToFixed(lowerVertex.c & (7 << 5))>>5), lowerDiff);
+		leftVd = idiv(leftV - (IntToFixed(lowerVertex.c & (7 << 2))>>2), lowerDiff);
 	}
 
-	colR = leftColR;
-	colG = leftColG;
-	colB = leftColB;
+	colR = leftU;
+	colG = leftV;
 	
 	scanlineMax = FixedToRoundedInt(centerVertex.p.y);
 	for(scanline = FixedToRoundedInt(upperVertex.p.y); scanline < scanlineMax; scanline++ ) {
 		int32_t xMax = FixedToRoundedInt(rightX);
 		for(int32_t x = FixedToRoundedInt(leftX); x <= xMax; x++) {
-			image[x+scanline*WIDTH] = (FixedToInt(colR)<<5) | (FixedToInt(colG)<<2) | (FixedToInt(colB));
+			image[x+scanline*WIDTH] = (FixedToInt(colR)<<5) | (FixedToInt(colG)<<2) | 2;
 			colR += colRdX;
 			colG += colGdX;
-			colB += colBdX;
 			colR = colR < 0 ? 0 : colR & 0x7FFF;
 			colG = colG < 0 ? 0 : colG & 0x7FFF;
-			colB = colB < 0 ? 0 : colB & 0x3FFF;
 		}
 		leftX += leftXd;
 		rightX += rightXd;
-		leftColR += leftColRd;
-		colR = leftColR;
-		leftColG += leftColGd;
-		colG = leftColG;
-		leftColB += leftColBd;
-		colB = leftColB;
+		leftU += leftUd;
+		colR = leftU;
+		leftV += leftVd;
+		colG = leftV;
 	}
 
 	// Guard against special case C: flat lower edge
@@ -223,13 +206,11 @@ void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat
 		leftX = centerVertex.p.x;
 		leftXd = idiv(centerVertex.p.x - lowerVertex.p.x, centerDiff);
 
-		leftColR = IntToFixed(centerVertex.c & (7 << 5))>>5;
-		leftColG = IntToFixed(centerVertex.c & (7 << 2))>>2;
-		leftColB = IntToFixed(centerVertex.c & (3));
+		leftU = IntToFixed(centerVertex.c & (7 << 5))>>5;
+		leftV = IntToFixed(centerVertex.c & (7 << 2))>>2;
 
-		leftColRd = idiv(leftColR - (IntToFixed(lowerVertex.c & (7 << 5))>>5), centerDiff);
-		leftColGd = idiv(leftColG - (IntToFixed(lowerVertex.c & (7 << 2))>>2), centerDiff);
-		leftColBd = idiv(leftColB - (IntToFixed(lowerVertex.c & (3))), centerDiff);
+		leftUd = idiv(leftU - (IntToFixed(lowerVertex.c & (7 << 5))>>5), centerDiff);
+		leftVd = idiv(leftV - (IntToFixed(lowerVertex.c & (7 << 2))>>2), centerDiff);
 	}
 	else {
 		rightX = centerVertex.p.x;
@@ -241,29 +222,24 @@ lower_half_render:
 	// lower triangle half
 	scanlineMax = FixedToRoundedInt(lowerVertex.p.y);
 
-	colR = leftColR;
-	colG = leftColG;
-	colB = leftColB;
+	colR = leftU;
+	colG = leftV;
 	
 	for(scanline = FixedToRoundedInt(centerVertex.p.y); scanline < scanlineMax; scanline++ ) {
 		int32_t xMax = FixedToRoundedInt(rightX);
 		for(int32_t x = FixedToRoundedInt(leftX); x <= xMax; x++) {
-			image[x+scanline*WIDTH] = (FixedToInt(colR)<<5) | (FixedToInt(colG)<<2) | (FixedToInt(colB));
+			image[x+scanline*WIDTH] = (FixedToInt(colR)<<5) | (FixedToInt(colG)<<2) | 2;
 			colR += colRdX;
 			colG += colGdX;
-			colB += colBdX;
 			colR = colR < 0 ? 0 : colR & 0x7FFF;
 			colG = colG < 0 ? 0 : colG & 0x7FFF;
-			colB = colB < 0 ? 0 : colB & 0x3FFF;
 		}
 		leftX += leftXd;
 		rightX += rightXd;
-		leftColR += leftColRd;
-		colR = leftColR;
-		leftColG += leftColGd;
-		colG = leftColG;
-		leftColB += leftColBd;
-		colB = leftColB;
+		leftU += leftUd;
+		colR = leftU;
+		leftV += leftVd;
+		colG = leftV;
 	}
 }
 

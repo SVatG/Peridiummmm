@@ -47,6 +47,7 @@ int main()
 
 	for(;;)
 	{
+		Rasterize();		
 		LogoShow();		
 		Greets();
 		SpanScreen();
@@ -54,7 +55,6 @@ int main()
 		Starfield();
 		Metablobs();
 		Scroller("Look out honey coz I'm using technology, ain't got time to make no apology");
-		Rasterize();
 		Rotozoom();
 	}
 }
