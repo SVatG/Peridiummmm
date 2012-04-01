@@ -14,13 +14,13 @@ extern uint32_t VGAFrameBufferAddress;
 extern uint32_t VGACurrentLineAddress;
 extern uint32_t VGAPixelsPerRow;
 
-void InitializeVGAScreenMode240(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
-void InitializeVGAScreenMode200(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
-void InitializeVGAScreenMode175(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
+void InitializeVGAScreenMode240();
+void InitializeVGAScreenMode200();
+void InitializeVGAScreenMode175();
 
-static inline void IntializeVGAScreenMode320x240(uint8_t *framebuffer) { InitializeVGAScreenMode240(framebuffer,320,13); }
-static inline void IntializeVGAScreenMode320x200(uint8_t *framebuffer) { InitializeVGAScreenMode200(framebuffer,320,13); }
-static inline void IntializeVGAScreenMode320x175(uint8_t *framebuffer) { InitializeVGAScreenMode175(framebuffer,320,13); }
+void SetBlankVGAScreenMode240();
+void SetBlankVGAScreenMode200();
+void SetBlankVGAScreenMode175();
 
 void SetVGAScreenMode240(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
 void SetVGAScreenMode200(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
@@ -59,6 +59,9 @@ static inline void RaiseVGAHSyncLine() { GPIOB->BSRRL=(1<<11); }
 static inline void LowerVGAHSyncLine() { GPIOB->BSRRH=(1<<11); }
 static inline void RaiseVGAVSyncLine() { GPIOB->BSRRL=(1<<12); }
 static inline void LowerVGAVSyncLine() { GPIOB->BSRRH=(1<<12); }
+
+static inline void SetVGASignalToBlack() { GPIOE->BSRRH=0xff00; }
+static inline void SetVGASignal(uint8_t pixel) { ((uint8_t *)&GPIOE->ODR)[1]=pixel; }
 
 static inline int HandleVGAHSync240()
 {
