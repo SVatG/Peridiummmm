@@ -34,7 +34,6 @@ C_FILES =	Accelerometer.c \
 		SpanScreen.c \
 		Sprites.c \
 		Starfield.c \
-		Greets.c \
 		Startup.c \
 		System.c \
 		TestSong.c \
@@ -51,6 +50,8 @@ C_FILES =	Accelerometer.c \
 		VectorLibrary/Integer.c \
 		ryx/font.c \
 		ryx/bezier.c \
+		ryx/Greets.c \
+		ryx/font_enri.c \
 		VectorLibrary/VectorFixed.c \
 		VectorLibrary/MatrixFixed.c \
 		VectorLibrary/QuaternionFixed.c \
