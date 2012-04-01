@@ -34,6 +34,7 @@ C_FILES =	Accelerometer.c \
 		SpanScreen.c \
 		Sprites.c \
 		Starfield.c \
+		Greets.c \
 		Startup.c \
 		System.c \
 		TestSong.c \
@@ -75,7 +76,9 @@ upload: $(NAME).bin
 	openocd -f interface/stlink-v2.cfg -f target/stm32f4x_stlink.cfg \
 	-c init -c "reset halt" -c "stm32f2x mass_erase 0" \
 	-c "flash write_bank 0 $(NAME).bin 0" \
-	-c "reset run" -c shutdown
+	-c "reset run" -c shutdown \
+	-s /home/paul/prog/demo/openocd-build/share/openocd/scripts
+
 
 debug:
 	arm-eabi-gdb $(NAME).elf \
