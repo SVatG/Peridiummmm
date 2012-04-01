@@ -48,6 +48,10 @@ C_FILES =	Accelerometer.c \
 		Graphics/DrawingStraightLines.c \
 		Graphics/Font.c \
 		VectorLibrary/Integer.c \
+		font.c \
+		bezier.c \
+		Greets.c \
+		font_enri.c \
 		VectorLibrary/VectorFixed.c \
 		VectorLibrary/MatrixFixed.c \
 		VectorLibrary/QuaternionFixed.c \
@@ -69,6 +73,7 @@ AUTODEPENDENCY_CFLAGS=-MMD -MF$(@:.o=.d) -MT$@
 
 
 
+
 all: $(NAME).bin
 
 upload: $(NAME).bin
@@ -76,6 +81,7 @@ upload: $(NAME).bin
 	-c init -c "reset halt" -c "stm32f2x mass_erase 0" \
 	-c "flash write_bank 0 $(NAME).bin 0" \
 	-c "reset run" -c shutdown
+
 
 debug:
 	arm-eabi-gdb $(NAME).elf \
@@ -92,6 +98,9 @@ $(NAME).bin: $(NAME).elf
 
 $(NAME).elf: $(OBJS)
 	$(LD) $(ALL_LDFLAGS) -o $@ $^ $(LIBS)
+
+#font_enri.c: fontToBezier.py
+#	python fontToBezier.py
 
 .SUFFIXES: .o .c .S
 
