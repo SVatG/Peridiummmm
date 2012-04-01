@@ -59,14 +59,24 @@ void SpanScreen()
 {
 	EnableAPB2PeripheralClock(RCC_APB2ENR_TIM1EN);
 
+	uint16_t *timepointer=data.spanscreen.times[1];
+	uint8_t *colourpointer=data.spanscreen.colours[1];
+	for(int y=0;y<400;y++)
+	{
+		*colourpointer++=RGB(0,0,0);
+		*timepointer++=0xffff;
+	}
+	data.spanscreen.timepointer=data.spanscreen.times[1];
+	data.spanscreen.colourpointer=data.spanscreen.colours[1];
+
+	WaitVBL();
+	SetVGAHorizontalSync31kHz(SpanHSyncHandler);
+
 	// Configure timer 1 as the pixel clock.
 	TIM1->CR1=TIM_CR1_OPM; // Upcounting mode, one pulse.
 	TIM1->DIER=TIM_DIER_CC1IE|TIM_DIER_UIE; // Enable compare interrupts 1, 2, 3 and 4, and update interrupt.
 	TIM1->PSC=0; // Prescaler = 1
 	TIM1->ARR=4100;
-
-	WaitVBL();
-	SetVGAHorizontalSync31kHz(SpanHSyncHandler);
 
 	InstallInterruptHandler(TIM1_UP_TIM10_IRQn,UpdateInterruptHandler);
 	EnableInterrupt(TIM1_UP_TIM10_IRQn);
