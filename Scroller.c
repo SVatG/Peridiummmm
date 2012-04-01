@@ -57,18 +57,12 @@ void Scroller(const char *text)
 
 	for(int i=0;i<8;i++)
 	{
-		data.scroller.copper[0][i]=RGB(i*32,0,0);
-		data.scroller.copper[0][15-i]=RGB(i*32,0,0);
-		data.scroller.copper[1][i]=RGB(i*32,i*32,0);
-		data.scroller.copper[1][15-i]=RGB(i*32,i*32,0);
-		data.scroller.copper[2][i]=RGB(0,i*32,0);
-		data.scroller.copper[2][15-i]=RGB(0,i*32,0);
-		data.scroller.copper[3][i]=RGB(0,i*32,i*32);
-		data.scroller.copper[3][15-i]=RGB(0,i*32,i*32);
-		data.scroller.copper[4][i]=RGB(0,0,i*32);
-		data.scroller.copper[4][15-i]=RGB(0,0,i*32);
-		data.scroller.copper[5][i]=RGB(i*32,0,i*32);
-		data.scroller.copper[5][15-i]=RGB(i*32,0,i*32);
+		data.scroller.copper[0][i]=data.scroller.copper[0][15-i]=RGB(i*32,i*32,i*32);
+		data.scroller.copper[1][i]=data.scroller.copper[1][15-i]=RGB(i*32,i*32,0);
+		data.scroller.copper[2][i]=data.scroller.copper[2][15-i]=RGB(i*32,i*32,i*32);
+		data.scroller.copper[3][i]=data.scroller.copper[3][15-i]=RGB(i*32,i*32,0);
+		data.scroller.copper[4][i]=data.scroller.copper[4][15-i]=RGB(i*32,i*32,i*32);
+		data.scroller.copper[5][i]=data.scroller.copper[5][15-i]=RGB(i*32,i*32,0);
 	}
 
 	data.scroller.scanline=0x20010000;
