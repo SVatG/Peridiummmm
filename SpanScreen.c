@@ -89,72 +89,53 @@ void SpanScreen()
 		uint16_t *timepointer=data.spanscreen.times[frame^1];
 		uint8_t *colourpointer=data.spanscreen.colours[frame^1];
 
+		int mainangle=(t*15)&4095;
+		int order[3];
+		int depth0=icos(mainangle+0*((4096+2)/3));
+		int depth1=icos(mainangle+1*((4096+2)/3));
+		int depth2=icos(mainangle+2*((4096+2)/3));
+		if(depth0<depth1)
+		{
+			if(depth1<depth2) { order[0]=0; order[1]=1; order[2]=2; } // 0 < 1 < 2
+			else if(depth0<depth2) { order[0]=0; order[1]=2; order[2]=1; } // 0 < 2 < 1
+			else { order[0]=2; order[1]=0; order[2]=1; } // 2 < 0 < 1
+		}
+		else
+		{
+			if(depth1>depth2) { order[0]=2; order[1]=1; order[2]=0; } // 2 < 1 < 0
+			else if(depth0>depth2) { order[0]=1; order[1]=2; order[2]=0; } // 1 < 2 < 0
+			else { order[0]=1; order[1]=0; order[2]=2; } // 1 < 0 < 2
+		}
+
 		for(int y=0;y<400;y++)
 		{
 			StartSpans(spans);
-{
-			int angle=(isin(t*4-15634)*isin(y*3+isin(t*7+166)-4143)>>12)+isin(t*3-3242);
 
-			int32_t sin_a=isin(angle);
-			int32_t cos_a=icos(angle);
+			for(int i=0;i<3;i++)
+			{
+				int n=order[i];
+				int angle=(isin(t*4-634*n)*isin(y*3+t*16-1876*n)>>12)+isin(t*3-3242*n);
 
-			int x1=sin_a/8+cos_a/4+Fix(0.5);
-			int x2=sin_a/8-cos_a/4+Fix(0.5);
-			int x3=-sin_a/8-cos_a/4+Fix(0.5);
-			int x4=-sin_a/8+cos_a/4+Fix(0.5);
+				int32_t sin_a=isin(angle);
+				int32_t cos_a=icos(angle);
 
-int c1=(-sin_a+cos_a+Fix(2))>>6;
-int c2=(-sin_a-cos_a+Fix(2))>>6;
-int c3=(sin_a-cos_a+Fix(2))>>6;
-int c4=(sin_a+cos_a+Fix(2))>>6;
+				int center=isin(mainangle+n*((4096+2)/3))/3+2100;
+				int depth=icos(mainangle+n*((4096+2)/3))+Fix(2);
 
-			AddSpan(spans,x1,x2,RGB(c1,0,0));
-			AddSpan(spans,x2,x3,RGB(0,c2,0));
-			AddSpan(spans,x3,x4,RGB(0,0,c3));
-			AddSpan(spans,x4,x1,RGB(c4,c4,0));
-}
-{
-			int angle=(isin(t*4+634)*isin(y*3+isin(t*7)+1243)>>12)+isin(t*3-342);
+				int x1=sin_a/16+cos_a/8+center;
+				int x2=sin_a/16-cos_a/8+center;
+				int x3=-sin_a/16-cos_a/8+center;
+				int x4=-sin_a/16+cos_a/8+center;
+				int c1=(depth*(-sin_a+cos_a+Fix(2)))>>19;
+				int c2=(depth*(-sin_a-cos_a+Fix(2)))>>19;
+				int c3=(depth*(sin_a-cos_a+Fix(2)))>>19;
+				int c4=(depth*(sin_a+cos_a+Fix(2)))>>19;
 
-			int32_t sin_a=isin(angle);
-			int32_t cos_a=icos(angle);
-
-			int x1=sin_a/16+cos_a/8+Fix(0.25);
-			int x2=sin_a/16-cos_a/8+Fix(0.25);
-			int x3=-sin_a/16-cos_a/8+Fix(0.25);
-			int x4=-sin_a/16+cos_a/8+Fix(0.25);
-
-int c1=(-sin_a+cos_a+Fix(2))>>5;
-int c2=(-sin_a-cos_a+Fix(2))>>5;
-int c3=(sin_a-cos_a+Fix(2))>>5;
-int c4=(sin_a+cos_a+Fix(2))>>5;
-
-			AddSpan(spans,x1,x2,RGB(c1,0,0));
-			AddSpan(spans,x2,x3,RGB(0,c2,0));
-			AddSpan(spans,x3,x4,RGB(0,0,c3));
-			AddSpan(spans,x4,x1,RGB(c4,c4,0));
-}
-{
-			int angle=(isin(t*4+1634)*isin(y*3+isin(t*7+12566)-443)>>12)+isin(t*3+342);
-
-			int32_t sin_a=isin(angle);
-			int32_t cos_a=icos(angle);
-
-			int x1=sin_a/16+cos_a/8+Fix(0.75);
-			int x2=sin_a/16-cos_a/8+Fix(0.75);
-			int x3=-sin_a/16-cos_a/8+Fix(0.75);
-			int x4=-sin_a/16+cos_a/8+Fix(0.75);
-
-int c1=(-sin_a+cos_a+Fix(2))>>5;
-int c2=(-sin_a-cos_a+Fix(2))>>5;
-int c3=(sin_a-cos_a+Fix(2))>>5;
-int c4=(sin_a+cos_a+Fix(2))>>5;
-
-			AddSpan(spans,x1,x2,RGB(c1,0,0));
-			AddSpan(spans,x2,x3,RGB(0,c2,0));
-			AddSpan(spans,x3,x4,RGB(0,0,c3));
-			AddSpan(spans,x4,x1,RGB(c4,c4,0));
-}
+				AddSpan(spans,x1,x2,RGB(c1,c1,c1));
+				AddSpan(spans,x2,x3,RGB(c2,c2,c2));
+				AddSpan(spans,x3,x4,RGB(c3,c3,c3));
+				AddSpan(spans,x4,x1,RGB(c4,c4,c4));
+			}
 
 			for(Span *span=spans;span->end!=0xffff;span++)
 			{
@@ -186,18 +167,24 @@ static void SpanHSyncHandler()
 
 	TIM8->CR1|=TIM_CR1_CEN; // Start timer;
 
-	SetVGASignal(*data.spanscreen.colourpointer++);
+	uint8_t *colptr=data.spanscreen.colourpointer;
+	uint16_t *timeptr=data.spanscreen.timepointer;
 
-	uint16_t nexttime=*data.spanscreen.timepointer++;
+	SetVGASignal(*colptr++);
+
+	uint16_t nexttime=*timeptr++;
 
 	while(nexttime<TIM8->CNT+100)
 	{
 		while(TIM8->CNT<nexttime);
-		SetVGASignal(*data.spanscreen.colourpointer++);
-		nexttime=*data.spanscreen.timepointer++;
+		SetVGASignal(*colptr++);
+		nexttime=*timeptr++;
 	}
 
-	TIM8->CCR1=nexttime-20;
+	data.spanscreen.colourpointer=colptr;
+	data.spanscreen.timepointer=timeptr;
+
+	TIM8->CCR1=nexttime-30;
 
 stopped=false;
 //	EnableInterrupt(TIM8_CC_IRQn);
@@ -221,16 +208,22 @@ static void CompareInterruptHandler()
 	TIM8->SR=0;
 if(stopped) return;
 
-	SetVGASignal(*data.spanscreen.colourpointer++);
+	uint8_t *colptr=data.spanscreen.colourpointer;
+	uint16_t *timeptr=data.spanscreen.timepointer;
 
-	uint16_t nexttime=*data.spanscreen.timepointer++;
+	SetVGASignal(*colptr++);
+
+	uint16_t nexttime=*timeptr++;
 
 	while(nexttime<TIM8->CNT+100)
 	{
 		while(TIM8->CNT<nexttime);
-		SetVGASignal(*data.spanscreen.colourpointer++);
-		nexttime=*data.spanscreen.timepointer++;
+		SetVGASignal(*colptr++);
+		nexttime=*timeptr++;
 	}
 
-	TIM8->CCR1=nexttime-20;
+	data.spanscreen.colourpointer=colptr;
+	data.spanscreen.timepointer=timeptr;
+
+	TIM8->CCR1=nexttime-30;
 }
