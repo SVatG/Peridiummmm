@@ -8,6 +8,7 @@
 #include "Metablobs.h"
 #include "Rasterize.h"
 #include "SpanScreen.h"
+#include "LogoShow.h"
 
 extern union GlobalData
 {
@@ -18,6 +19,7 @@ extern union GlobalData
 	struct MetablobsData metablobs;
 	struct RasterizeData rasterizer;
 	struct SpanScreenData spanscreen;
+	struct LogoShowData logoshow;
 } data;
 
 #endif
