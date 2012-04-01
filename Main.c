@@ -47,8 +47,8 @@ int main()
 
 	for(;;)
 	{
+		LogoShow();		
 		Greets();
-		LogoShow();
 		SpanScreen();
 		Epileptor();
 		Starfield();

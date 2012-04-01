@@ -4,7 +4,7 @@
 void LogoShow();
 
 struct LogoShowData {
-	uint8_t colourLut[256*4];
+	uint8_t colourLut[256*8];
 };
 
 #endif
