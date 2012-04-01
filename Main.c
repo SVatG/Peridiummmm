@@ -47,10 +47,10 @@ int main()
 
 	for(;;)
 	{
+		Epileptor();
 		Greets();
 		LogoShow();
 		SpanScreen();
-		Epileptor();
 		Starfield();
 		Metablobs();
 		Scroller("Look out honey coz I'm using technology, ain't got time to make no apology");
