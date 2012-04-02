@@ -17,6 +17,7 @@ void greets_inner(Bitmap* currframe);
 void logo_inner(Bitmap* currframe);
 void Greets();
 void RevisionLogo();
+void print_vga_line(Bitmap* currframe);
 
 bool isdone();
 

@@ -36,8 +36,8 @@ greet_t greets[] = {
 
 int greetindex;
 greet_t *gprev, *gcur, *gnext;
-int tick;
-bool done;
+int tick,tock;
+bool done = false;
 point_t textpts1[200];
 point_t textpts2[200];
 
@@ -48,11 +48,13 @@ void greets_init(){
     gnext = greets+2;
     tick=-1;
     done = false;
+
 }
 
 void logo_init(){
     tick = -1;
     done = false;
+
 }
 
 #ifndef TESTING
@@ -84,6 +86,13 @@ void Greets(){
         ClearBitmap(currframe);
 
         greets_inner(currframe);
+
+//        volatile int delay;
+//        for(delay=0; delay<500000; ++delay)
+            ;
+        
+
+        print_vga_line(currframe);
 
 	}
 
@@ -128,12 +137,12 @@ void RevisionLogo(){
 void logo_inner(Bitmap* currframe){
     tick++;
     point_t p={100,70};
-    if(tick<100){
-        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, tick);
-    } else if(tick < 200){
+    if(tick<64){
+        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, tick*2);
+    } else if(tick < 128){
         render_text(currframe, " ", p, 100, revision_logo_glyph);
-    } else if(tick < 300){
-        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, tick-100);
+    } else if(tick < 196){
+        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, -(tick*2-256));
     } else {
         done = true;
     }
@@ -142,7 +151,11 @@ void logo_inner(Bitmap* currframe){
 void greets_inner(Bitmap* currframe){
 
     // handle what the hell we do
-    tick++;
+    tock++;
+    if(tock>=1){
+        tick++;
+        tock=0;
+    }
     if(tick>67){
         tick = 0;
         greetindex++;
@@ -157,30 +170,45 @@ void greets_inner(Bitmap* currframe){
     if(tick<= 34){ // construct cur / finish transition from prev
         // cur
         if(gcur->show){
-            render_text_partial(currframe, gcur->text, gcur->pos, gcur->size, font_enri_glyph, tick*100/34);
+            render_text_partial(currframe, gcur->text, gcur->pos, gcur->size, font_enri_glyph, tick*128/34);
         }
         // prev
         if(gprev->show && gcur->show){
             int a=200,b=200;
             get_text_points(textpts1, &a, gprev->text, gprev->pos, gprev->size,font_enri_glyph, false);
             get_text_points(textpts2, &b, gcur->text, gcur->pos, gcur->size,font_enri_glyph, true);
-            make_transition(currframe, textpts1, a, textpts2, b, (tick*100/34)+100);
+            make_transition(currframe, textpts1, a, textpts2, b, (tick*128/34)-128);
         }
     } else { // destruct cur / transition to next
         // cur
         if(gcur->show){
-            render_text_partial(currframe, gcur->text, gcur->pos, gcur->size, font_enri_glyph, (tick-34)*100/33 + 100);
+            render_text_partial(currframe, gcur->text, gcur->pos, gcur->size, font_enri_glyph, -(tick-34)*128/33);
         }
         // next
         if(gnext->show && gcur->show){
             int a=200,b=200;
             get_text_points(textpts1, &a, gcur->text, gcur->pos, gcur->size, font_enri_glyph, false);
             get_text_points(textpts2, &b, gnext->text, gnext->pos, gnext->size, font_enri_glyph, true);
-            make_transition(currframe, textpts1, a, textpts2, b, (tick-34)*100/33);
+            make_transition(currframe, textpts1, a, textpts2, b, (tick-34)*128/33);
         }
     }
 }
 
 bool isdone(){
     return(done);
+}
+
+
+void print_vga_line(Bitmap* dest){
+    int line=22;
+#ifndef TESTING
+    line = VGALine;
+#endif //TESTING
+    point_t p3 = {290,185};
+    char s[10];
+    s[0] = (line/100)%10 + '0';
+    s[1] = (line/10)%10 + '0';
+    s[2] = (line)%10 + '0';
+    s[3] = 0;
+    render_text(dest, s ,p3, 20, font_enri_glyph);
 }

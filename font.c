@@ -2,6 +2,10 @@
 #include "font.h"
 #include "2dvector.h"
 
+#ifdef TESTING
+#include <stdio.h>
+#endif
+
 void render_text(Bitmap *dest, char* text, point_t pos, int size, const glyph_t* font){
     pos = pscale(pos, BEZ_SCALEDOWN, 0); // scale pos to bezier coordinates
     while(*text != 0){
@@ -16,7 +20,7 @@ void render_text(Bitmap *dest, char* text, point_t pos, int size, const glyph_t*
                 t = padd(t, pos); // position
                 b.p[j]=t;
             }
-            bezier_draw_improved(dest, b);
+            bezier_draw(dest, b);
         }
         pos.x += (g.width*size)>>FONT_SIZE_LOG2;
 
@@ -27,6 +31,11 @@ void render_text(Bitmap *dest, char* text, point_t pos, int size, const glyph_t*
 
 void render_text_partial(Bitmap *dest, char* text, point_t pos, int size, const glyph_t* font, int percent){
     pos = pscale(pos, BEZ_SCALEDOWN, 0); // scale pos to bezier coordinates
+    int reversed = 0;
+    if(percent < 0){
+        percent = -percent;
+        reversed = 1;
+    }
     while(*text != 0){
         glyph_t g = font[((*text)-0x20)];
         for(int k=0; k<GLYPHGROUPS; ++k){ // iterate groups in glyph
@@ -44,20 +53,18 @@ void render_text_partial(Bitmap *dest, char* text, point_t pos, int size, const 
                 }
                 // decide if to draw fully, partial or not
                 int percent2 = percent>=100 ? percent-100 : percent;
-                if(((i+1)*100)<(percent2*segments)){
+                if(((i+1)*128)<(percent*segments)){
                     // draw fully (if starting)
-                    if(percent<100)
-                        bezier_draw_improved(dest, b);
-                } else if((i*100)<(percent2*segments)){
+                    if(!reversed)
+                        bezier_draw(dest, b);
+                } else if((i*128)<(percent*segments)){
                     // draw partial
-                    int p = percent2*segments - 100*i;
-                    if(percent >= 100)
-                        p+=100;                        
-                    bezier_draw_partial(dest, b, p);
+                    int p = percent*segments - 128*i;
+                    bezier_draw_partial(dest, b, p - 128*reversed);
                 } else {
                     // draw nothing (if starting
-                    if(percent>=100)
-                        bezier_draw_improved(dest, b);
+                    if(reversed)
+                        bezier_draw(dest, b);
                 }
             }
         }
@@ -123,37 +130,37 @@ static int cmp_ptpair(const void* p1, const void* p2){
     return(((point_t*)p1)->x - ((point_t*)p2)->x);
 }
 
-void make_transition(Bitmap *dest, point_t *startpts, int startsize, point_t *endpts, int endsize, int percent){
+void make_transition(Bitmap *dest, point_t *startpts, int startsize, point_t *endpts, int endsize, int ratio){
+    // sort by x:
+    qsort(startpts, startsize, sizeof(point_t)*2, cmp_ptpair);
+    qsort(endpts, endsize, sizeof(point_t)*2, cmp_ptpair);
+
     for(int i=0; i<startsize; ++i){
         // this handles startsize>endsize well. TODO: handle endsize>startsize
         
-        // sort by x:
-        qsort(startpts, startsize, sizeof(point_t)*2, cmp_ptpair);
-        qsort(endpts, endsize, sizeof(point_t)*2, cmp_ptpair);
-
         point_t p1, p2, p3, p4, p5;
         p1 = startpts[i*2];
         p2 = startpts[i*2+1];
         p5 = endpts[(i*endsize/startsize)*2];
         p4 = endpts[(i*endsize/startsize)*2+1];
         p3 = pavg(p2, p4);
-        int percent1, percent2;
-        if(percent<=100){
-            percent1 = min(99, percent*2);
-            percent2 = min(99, percent*2-100);
+        int ratio1, ratio2;
+        if(ratio>0){
+            ratio1 = ratio*2;
+            ratio2 = max(ratio*2-128, 0);
         } else {
-            percent1 = max(100, percent*2-100);
-            percent2 = max(100, percent*2-200);
+            ratio1 = min(0, ratio*2+128);
+            ratio2 = ratio*2;
         }
         bezier_t b;
         b.p[0]=p1;
         b.p[1]=p2;
         b.p[2]=p3;
-        bezier_draw_partial(dest, b, percent1);
+        bezier_draw_partial(dest, b, ratio1);
         b.p[0]=p3;
         b.p[1]=p4;
         b.p[2]=p5;
-        bezier_draw_partial(dest, b, percent2);
+        bezier_draw_partial(dest, b, ratio2);
     }
 }
 

@@ -244,6 +244,7 @@ static inline void StartPixelDMA()
 	DMA2_Stream1->CR|=DMA_SxCR_EN;
 
 	// Start pixel clock.
+    TIM8->CNT = 0;
 	TIM8->CR1|=TIM_CR1_CEN;
 }
 

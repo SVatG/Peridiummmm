@@ -5,7 +5,7 @@
 
 #define WIDTH 320
 #define HEIGHT 200
-
+/*
 void bezier_draw_path_partial(Bitmap *dest, bezier_t *data, int len, int percent){
     for(int i=0; i<len; ++i){
         point_t a,b,p;
@@ -23,83 +23,86 @@ void bezier_draw_path_partial(Bitmap *dest, bezier_t *data, int len, int percent
         bezier_setpixel(dest, bez.p[1],7<<2);
 #endif //SHOW_CONTROL_POINTS
     }
+}*/
+
+void bezier_draw_partial(Bitmap *dest, bezier_t bez, int ratio){    
+    // ratio is between 0 and 128. Or negative for drawing only the end, not the beginning.
+    static bezier_t stack[15]; //TODO: merge with stack from bezier_draw
+    static int ratios[15];
+    int stackpos = 0;
+    if(ratio<0){ 
+        // turn around bez
+        ratio = -ratio;
+        point_t tmp;
+        tmp = bez.p[0];
+        bez.p[0] = bez.p[2];
+        bez.p[2] = tmp;
+    }
+
+    stack[0] = bez;
+    ratios[0] = ratio;
+
+    while(stackpos >=0){
+        int r = ratios[stackpos];
+        bezier_t *b = &stack[stackpos--];
+        if(r<=0){
+            continue; // don't draw this sub-bezier
+        }
+        int len = plen(b->p[0],b->p[1])+plen(b->p[1],b->p[2]);
+        if(len>BEZ_SCALEDOWN*2){
+            point_t p1, p2, pm, bp2;
+            p1 = pavg(b->p[0], b->p[1]);
+            p2 = pavg(b->p[1], b->p[2]);
+            pm = pavg(p1,p2);
+            bezier_t *t;
+            t = &stack[++stackpos];
+            t->p[0] = b->p[0];
+            t->p[1] = p1;
+            bp2 = b->p[2]; // rescue value before writing there
+            t->p[2] = pm;
+            ratios[stackpos] = r*2;
+            t = &stack[++stackpos];
+            t->p[0] = pm;
+            t->p[1] = p2;
+            t->p[2] = bp2;
+            ratios[stackpos] = r*2-128;
+        } else {
+            bezier_setpixel(dest, b->p[0], 255);
+            if(r>=64){
+                bezier_setpixel(dest, b->p[1], 255);
+            }
+        }
+    }
 }
 
-void bezier_draw_partial(Bitmap *dest, bezier_t bez, int percent){
-    point_t a,b,p;
-    int x,y;
-    // clamp
-    if(percent>=200){
-        percent=199;
-    }
-    if(percent<0){
-        percent=0;
-    }
-    if(percent<100){
-        // render forward
-        for(int t=0; t<(BEZ_STEPS*percent/100); ++t){
-            a = padd(bez.p[0], pscale_bez(psub(bez.p[1],bez.p[0]),t));
-            b = padd(bez.p[1], pscale_bez(psub(bez.p[2],bez.p[1]),t));
-            p = padd(a, pscale_bez(psub(b,a),t));
-            bezier_setpixel(dest, p,255);
-        }
-    } else {
-        // render backwards
-        for(int t=(BEZ_STEPS*(percent-99)/100); t<BEZ_STEPS; ++t){
-            a = padd(bez.p[0], pscale_bez(psub(bez.p[1],bez.p[0]),t));
-            b = padd(bez.p[1], pscale_bez(psub(bez.p[2],bez.p[1]),t));
-            p = padd(a, pscale_bez(psub(b,a),t));
-            bezier_setpixel(dest, p,255);
-        }
-    }
-#ifdef DEBUG
-    callcount_bezier++;
-#endif //DEBUG
-}
 
 void bezier_draw(Bitmap *dest, bezier_t bez){
-    point_t a,b,p;
-    int x,y;
-    for(int t=0; t<BEZ_STEPS; ++t){
-        a = padd(bez.p[0], pscale_bez(psub(bez.p[1],bez.p[0]),t));
-        b = padd(bez.p[1], pscale_bez(psub(bez.p[2],bez.p[1]),t));
-        p = padd(a, pscale_bez(psub(b,a),t));
-        bezier_setpixel(dest, p,255);
-    }
-#ifdef SHOW_CONTROL_POINTS        
-    bezier_setpixel(dest, bez[2],7<<5);
-    bezier_setpixel(dest, bez[1],7<<2);
-#endif //SHOW_CONTROL_POINTS
-#ifdef DEBUG
-    callcount_bezier++;
-#endif //DEBUG
-}
-
-void bezier_draw_improved(Bitmap *dest, bezier_t bez){
-    static bezier_t stack[10];
+    static bezier_t stack[15];
     int stackpos = 0;
     stack[0] = bez;
     //TODO: draw last point of curve
 
     while(stackpos >=0){
-        bezier_t b = stack[stackpos--];
-        int len = plen(b.p[0],b.p[1])+plen(b.p[1],b.p[2]);
-        if(len>BEZ_SCALEDOWN){
-            point_t p1, p2, pm;
-            p1 = pavg(b.p[0], b.p[1]);
-            p2 = pavg(b.p[1], b.p[2]);
+        bezier_t *b = &stack[stackpos--];
+        int len = plen(b->p[0],b->p[1])+plen(b->p[1],b->p[2]);
+        if(len>BEZ_SCALEDOWN*2){
+            point_t p1, p2, pm, bp2;
+            p1 = pavg(b->p[0], b->p[1]);
+            p2 = pavg(b->p[1], b->p[2]);
             pm = pavg(p1,p2);
-            bezier_t t;
-            t.p[0] = b.p[0];
-            t.p[1] = p1;
-            t.p[2] = pm;
-            stack[++stackpos] = t;
-            t.p[0] = pm;
-            t.p[1] = p2;
-            t.p[2] = b.p[2];
-            stack[++stackpos] = t;
+            bezier_t *t;
+            t = &stack[++stackpos];
+            t->p[0] = b->p[0];
+            t->p[1] = p1;
+            bp2 = b->p[2]; // rescue value before writing there
+            t->p[2] = pm;
+            t = &stack[++stackpos];
+            t->p[0] = pm;
+            t->p[1] = p2;
+            t->p[2] = bp2;
         } else {
-            bezier_setpixel(dest, b.p[0], 255);
+            bezier_setpixel(dest, b->p[0], 255);
+            bezier_setpixel(dest, b->p[1], 255);
         }
     }
 }
