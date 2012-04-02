@@ -72,11 +72,11 @@ inline int plen(const point_t a, const point_t b){
     return(r);
 }
 
-
 inline int min(int a, int b){
    return((a<b)?a:b);
 }
 inline int max(int a, int b){
    return((a>b)?a:b);
 }
+
 #endif //__2DVECTOR_H_

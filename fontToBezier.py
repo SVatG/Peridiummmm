@@ -4,7 +4,7 @@ import re
 from math import sqrt
 
 groups_per_glyph = 2
-maxgroups = 8
+maxgroups = 32
 
 def ptadd(a,b):
     return (a[0]+b[0],a[1]+b[1])
@@ -21,15 +21,20 @@ def makebezier(s):
     beziers = []
     tokenized = []
     cmd = None
+    global pushed
+    pushed = None
     
     it = re.finditer("(([a-zA-Z])|(-?[0-9.]+))([, \t\n]*)",s)
 
     def getpt():
+        global pushed
         try:
-            t = it.next()
-            return float(t.group(1)                    )
+            t=pushed or it.next()
+            pushed = None
+
+            return float(t.groups()[2])
         except:         
-            print t.groups()
+#            print t.groups()
             raise 
             raise Exception("error parsing svg path: float expected")
     def getpair():
@@ -37,14 +42,23 @@ def makebezier(s):
 
     try:
         while True:
-            a = it.next().group(1)
+            n = it.next()
+            a = n.groups()[1]
             if a: 
                 cmd = a # otherwise: use last cmd
             else:
-                raise Exception("reusing last command not supported yet")
-            # Mhvlqtz
+                pushed = n
+                cmd = lastcmd
+                if cmd=="m":
+                    cmd = "l"
+#                raise Exception("reusing last command not supported yet")
+                
+            # Mmhvlqtz
             if cmd=="M": # move
                 startpt = getpair()
+                lastpt = startpt
+            elif cmd=="m":
+                startpt = ptadd(lastpt, getpair())
                 lastpt = startpt
             elif cmd=="h": # horizline
                 delta = (getpt(),0)
@@ -84,6 +98,7 @@ def makebezier(s):
 
             if cmd not in "qQtT":
                 lastctrlpt = None # clear last control point
+            lastcmd = cmd
     except StopIteration:
         return beziers
 
@@ -182,10 +197,62 @@ def convert_svg_font(filename, varbase="font_foo", whichchars=None, scalefactor=
     fd.write(";\n\n")
 
     
+
+
+
+
+def convert_svg(filename, varbase, groupcount, scalefactor=1024):
+    from xml.etree.ElementTree import ElementTree
+    tree = ElementTree()
+    tree.parse(filename)
+#    if whichchars:
+#        whichchars = unicode(whichchars)
+
+    # FUCK YOU XML!!!!!!!!!!!!!!!!!!!!
+    ns = re.match("\{.*\}",tree.find(".").tag).group(0)
+
+    path=tree.find("%sg/%spath"%(ns,ns))
+    d = path.get("d")
+
+
+    bezierdata = makebezier(d)
+    print len(d), len(bezierdata)
+
+
+    # write out data to headerfile
+    fd=file("%s.c"%varbase,"wb")
+    fd.write('#include "fontheader.h"\n\n')
     
+    # data
+    fd.write("const bezier_t %s_data[] = {\n"%varbase)
+    first=True
+    for b in bezierdata:
+        if not first:
+            fd.write(",\n")
+        first=False
+        a=tuple(map(lambda x:int(x*scalefactor), (b[0][0],b[0][1],b[1][0],b[1][1],b[2][0],b[2][1])))
+        fd.write("\t{%s, %s, %s, %s, %s, %s}"%a)
+    fd.write("};\n\n")
+
+    # glyphs
+    fd.write("const glyph_t %s_glyph = "%varbase)
+    first=True
+    cumlen=0;
+    fd.write("{%s, %s, &%s_data[0], %s, " % ("' '", 0, varbase, len(bezierdata)))
+    groupdata = sort_glyph_to_groups(bezierdata, groupcount)
+    if groupdata:
+        starts, lens, pathlens = zip(*groupdata)
+    else:
+        starts, lens, pathlens = [],[], []
+    pathlens = map(lambda x: int(x*scalefactor), pathlens)
+    fd.write(list_to_C(starts, maxgroups)+", "+list_to_C(lens, maxgroups)+","+"}")
 
 
-def sort_glyph_to_groups(beziers):
+
+    fd.write(";\n\n")
+
+
+def sort_glyph_to_groups(beziers, groupcount = groups_per_glyph):
     # TODO: calculate lens, figure out contiguous groups, then separate into groups_per_glyph groups.
     # returns a tuple of group-lengths
     
@@ -198,7 +265,7 @@ def sort_glyph_to_groups(beziers):
         lens.append(sqrt((b[1][0]-b[0][0])**2+(b[1][1]-b[0][1])**2+(b[2][0]-b[1][0])**2+(b[2][1]-b[1][1])**2))
 
     totallen = sum(lens)
-    targetlen = totallen/groups_per_glyph
+    targetlen = totallen/groupcount
     
     # find connected paths
     start = 0
@@ -262,3 +329,4 @@ if __name__=="__main__":
 
     chars = "".join(map(chr, range(0x20,0x80)))
     convert_svg_font("Enriqueta-Regular.svg", "font_enri", chars)
+    convert_svg("revision_logo_lines.svg", "revision_logo", 20)

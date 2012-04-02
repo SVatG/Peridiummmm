@@ -1,7 +1,7 @@
 #ifndef __FONTHEADER_H_
 #define __FONTHEADER_H_
 
-#define GLYPHGROUPS 8
+#define GLYPHGROUPS 32
 
 #include <stdint.h>
 
@@ -20,8 +20,8 @@ typedef struct {
     int width;
     const bezier_t* data;
     int datalen;
-    uint8_t groupstart[GLYPHGROUPS];
-    uint8_t grouplen[GLYPHGROUPS];
+    uint16_t groupstart[GLYPHGROUPS];
+    uint16_t grouplen[GLYPHGROUPS];
     int pathlen[GLYPHGROUPS];
 } glyph_t;
 

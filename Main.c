@@ -55,6 +55,7 @@ int main()
 	for(;;)
 	{
 		Scroller2();
+		RevisionLogo();
 		Rasterize();
 		LogoShow();
 		Epileptor();

@@ -52,6 +52,7 @@ C_FILES =	Accelerometer.c \
 		bezier.c \
 		Greets.c \
 		font_enri.c \
+		revision_logo.c \
 		VectorLibrary/VectorFixed.c \
 		VectorLibrary/MatrixFixed.c \
 		VectorLibrary/QuaternionFixed.c \
