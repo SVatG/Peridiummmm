@@ -4,7 +4,6 @@
 #include "VectorLibrary/VectorFixed.h"
 #include "VectorLibrary/MatrixFixed.h"
 
-void RasterizeTest(uint8_t* image);
 void RasterizeInit();
 void Rasterize();
 

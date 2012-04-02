@@ -20,6 +20,7 @@
 #include "Scroller.h"
 #include "LogoShow.h"
 #include "Greets.h"
+#include "Scroller2.h"
 
 static void AudioCallback(void *context,int buffer);
 int16_t *buffers[2]={ (int16_t *)0x2001fa00,(int16_t *)0x2001fc00 };
@@ -32,7 +33,7 @@ int main()
 	InitializeLEDs();
 
 	InitializeSystem();
-
+	
 	InitializeLEDs();
 	InitializeUserButton();
 
@@ -41,15 +42,22 @@ int main()
 
 	InitializeAudio(Audio22050HzSettings);
 	SetAudioVolume(0xEF);
-	PlayAudioWithCallback(AudioCallback,&song);
-
 	InitializeVGAScreenMode200();
+
+	// "Monitor turns on"
+	for(int i = 0; i < 150; i++) {
+		WaitVBL();
+		// TODO set a black framebuffer
+	}
+	
+	PlayAudioWithCallback(AudioCallback,&song);
 
 	for(;;)
 	{
-		Rasterize();		
-		Epileptor();
+		Scroller2();
+		Rasterize();
 		LogoShow();
+		Epileptor();
 		Greets();
 		SpanScreen();
 		Starfield();

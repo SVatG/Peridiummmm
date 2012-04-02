@@ -29,8 +29,6 @@ void LogoShow() {
 
 	int t=0;
 
-	RasterizeInit();
-
 	for(int32_t c = 0; c < 256; c++) {
 		for(int32_t shval = 0; shval < 8; shval++) {
 			data.logoshow.colourLut[c+shval*256] =
@@ -58,10 +56,10 @@ void LogoShow() {
 		}
 		
 		uint8_t* pixels = currframe->pixels;
-		if(t < 300) {
+		if(t < 100) {
 			for(int32_t y = 0; y < 200; y++ ) {
 				for(int32_t x = 0; x < 320; x++) {
-					int32_t shval = -((((y<<1)-x)>>2)+(t-250)*2)>>4;
+					int32_t shval = -((((y<<1)-x)>>2)+(t-50)*12)>>4;
 					if(shval<0) shval=0;
 					if(shval>7) shval=7;
 					int32_t pos = x+y*320;
@@ -70,13 +68,13 @@ void LogoShow() {
 			}
 		}
 		else {
-			if(t < 700) {
+			if(t < 150) {
 				//memcpy(pixels,Logo_0,320*200);
 			}
 			else {
 				for(int32_t y = 0; y < 200; y++ ) {
 					for(int32_t x = 0; x < 320; x++) {
-						int32_t shval  = (((((y<<1)-x)>>2)+(t-850)*2)>>4);
+						int32_t shval  = (((((y<<1)-x)>>2)+(t-200)*12)>>4);
 						shval = shval < 0 ? 0 : shval;
 						shval = shval > 7 ? 7 : shval;
 						int32_t pos = x+y*320;
