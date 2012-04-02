@@ -38,7 +38,7 @@ int main()
 	InitializeUserButton();
 
 	BitBinSong song;
-	InitializeBitBinSong(&song,BitBin22kTable,8,1792,channels);
+	InitializeBitBinSong(&song,BitBin22kTable,8,1920,channels);
 
 	InitializeAudio(Audio22050HzSettings);
 	SetAudioVolume(0xEF);
