@@ -9,6 +9,7 @@
 #include "Rasterize.h"
 #include "SpanScreen.h"
 #include "LogoShow.h"
+#include "Scroller2.h"
 
 extern union GlobalData
 {
@@ -20,6 +21,7 @@ extern union GlobalData
 	struct RasterizeData rasterizer;
 	struct SpanScreenData spanscreen;
 	struct LogoShowData logoshow;
+	struct Scroller2Data scroller2;
 } data;
 
 #endif

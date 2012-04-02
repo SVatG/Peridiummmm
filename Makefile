@@ -61,6 +61,7 @@ C_FILES =	Accelerometer.c \
 		Blobs.c \
 		logo.c \
 		LogoShow.c \
+		Scroller2.c \
 			
 S_FILES = 
 
