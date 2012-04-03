@@ -281,7 +281,7 @@ int cy=HEIGHT;
 
 	"xloop4:						\n"
 	"	ldrb	r0,[r5]				\n"
-	"	mov		r0,r0,lsl #16		\n"
+	"	mov		r0,r0,lsl #14		\n"
 
 	ONE_LOOKUP
 	ONE_LOOKUP
