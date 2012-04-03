@@ -44,7 +44,7 @@ int main()
 
 	InitializeAudio(Audio22050HzSettings);
 	SetAudioVolume(0xEF);
-	InitializeVGAScreenMode200();
+	InitializeVGAScreenMode400();
 
 	// "Monitor turns on"
 	for(int i = 0; i < 150; i++) {
