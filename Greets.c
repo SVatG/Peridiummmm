@@ -145,7 +145,7 @@ void logo_inner(Bitmap* currframe){
     } else if(tick < 67*3){
         render_text(currframe, " ", p, 100, revision_logo_glyph);
     } else if(tick < 67*4){
-        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, -(tick*2-67*3));
+        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, -((tick-67*3)*2);
     } else {
         done = true;
     }
