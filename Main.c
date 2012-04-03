@@ -73,6 +73,7 @@ int main()
 	
 	for(;;)
 	{
+		RadialScroller("Light aircraft they overfly you, instruments they veer towards you. Every fallen stone that passed you used to form a wall around you.");
 		LogoShow();
 		RevisionLogo();
 		Scroller3("Welcome to our little prod for the STM32F4. Lets start things off with some lovely full-screen twisters.");
