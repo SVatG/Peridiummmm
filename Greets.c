@@ -6,6 +6,8 @@
 #include "Graphics/Bitmap.h"
 #include "Graphics/Drawing.h"
 
+#include "Global.h"
+
 #ifndef TESTING
 #include "Button.h"
 #include "VGA.h"
