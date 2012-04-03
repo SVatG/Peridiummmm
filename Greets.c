@@ -6,9 +6,9 @@
 #include "Graphics/Bitmap.h"
 #include "Graphics/Drawing.h"
 
-#include "Global.h"
 
 #ifndef TESTING
+#include "Global.h"
 #include "Button.h"
 #include "VGA.h"
 #endif //TESTING
