@@ -4,16 +4,20 @@
 #include "LED.h"
 #include "Button.h"
 #include "Utils.h"
+#include "Random.h"
 
 #include "Graphics/Bitmap.h"
 #include "Graphics/Drawing.h"
+#include "Graphics/Font.h"
 
 #include <stdint.h>
 #include <string.h>
 
-static void DrawBlob(Bitmap *bitmap,int x0,int y0,int c);
+static uint32_t sqrti(uint32_t n);
 
-void Epileptor()
+extern Font OLFont;
+
+void Epileptor(const char* message)
 {
 	uint8_t *framebuffer1=(uint8_t *)0x20000000;
 	uint8_t *framebuffer2=(uint8_t *)0x20010000;
@@ -26,9 +30,9 @@ void Epileptor()
 		int g=ExtractRawGreen(i);
 		int b=ExtractRawBlue(i);
 
+		if(b && (r&1)==0 && (g&1)==0 ) b--;
 		if(r) r--;
 		if(g) g--;
-		if(b) b--;
 
 		data.epileptor.replacements[i]=RawRGB(r,g,b);
 	}
@@ -39,14 +43,43 @@ void Epileptor()
 	InitializeBitmap(&frame1,320,200,320,framebuffer1);
 	InitializeBitmap(&frame2,320,200,320,framebuffer2);
 
-	int t=0;
+	int frame=0;
+	int first=VGAFrameCounter();
+
+	for(int i=0;i<NumberOfScrollerStars;i++)
+	{
+		data.epileptor.stars[i].x=Fix(RandomInteger()%320);
+		data.epileptor.stars[i].y=RandomInteger()%200;
+
+		int z=sqrti((NumberOfScrollerStars-1-i)*NumberOfScrollerStars)*1000/NumberOfScrollerStars;
+		data.epileptor.stars[i].dx=6000*1200/(z+200);
+
+		int c=255*i/NumberOfScrollerStars;
+
+		switch(RandomInteger()%5)
+		{
+			case 0:
+			case 1:
+				data.epileptor.stars[i].c=RGB(0,c,c);
+			break;
+
+			case 2:
+				data.epileptor.stars[i].c=RGB(c,c,c);
+			break;
+
+			case 3:
+			case 4:
+				data.epileptor.stars[i].c=RGB(c,0,c);
+			break;
+		}
+	}
 
 	while(!UserButtonState())
 	{
 		WaitVBL();
 
 		Bitmap *currframe;
-		if(t&1)
+		if(frame)
 		{
 			currframe=&frame2;
 			SetFrameBuffer(framebuffer1);
@@ -63,44 +96,60 @@ void Epileptor()
 			framebuffer1[j]=data.epileptor.replacements[framebuffer2[j]];
 		}
 
-		SetLEDs(1<<((t/3)&3));
+		int t=VGAFrameCounter()-first;
+		int x=320-t;
 
-		int32_t sina=isin(t*3);
-		int32_t sinb=isin(10*t/11);
-
-		for(int j=0;j<4;j++)
+		for(int i=0;i<NumberOfScrollerStars;i++)
 		{
-			int32_t sin1=isin(sina+j*1024);
-			int32_t cos1=icos(sina+j*1024);
-			int32_t sin2=isin(sinb/3+j*1024+1421);
-			int32_t cos2=icos(sinb/3+j*1024+1421);
-			int32_t sin3=isin(t*23);
-			int32_t sin4=isin(t*14);
+			int oldx=data.epileptor.stars[i].x;
+			int newx=oldx+data.epileptor.stars[i].dx;
+			data.epileptor.stars[i].x=newx;
 
-			int x=160+((imul(sin1,sin4)+imul(sin2,sin3)/2)>>5);
-			int y=100+((imul(cos1,sin4)+imul(cos2,sin3)/2)>>5);
+			DrawHorizontalLine(currframe,FixedToInt(oldx),data.epileptor.stars[i].y,
+			FixedToInt(newx)-FixedToInt(oldx),data.epileptor.stars[i].c);
 
-			DrawBlob(currframe,x,y,RGB(
-			FixedToInt(255*(isin(32*t)+Fix(1))/2),
-			FixedToInt(255*(isin(32*t+4096/3)+Fix(1))/2),
-			FixedToInt(255*(isin(32*t+4096*2/3)+Fix(1))/2)
-			));
+			if(newx>=Fix(320))
+			{
+				data.epileptor.stars[i].x=Fix(0);
+				data.epileptor.stars[i].y=RandomInteger()%200;
+			}
 		}
 
-		t++;
+		for(const char *ptr=message;*ptr;ptr++)
+		{
+			int c=*ptr;
+
+			int y=(isin(x*20+t*33)>>7)+100-8;
+
+			DrawCharacter(currframe,&OLFont,x,y,0,c);
+
+			x+=WidthOfCharacter(&OLFont,c)+2;
+		}
+
+		SetLEDs(1<<((t/3)&3));
+
+		frame^=1;
 	}
+
 
 	while(UserButtonState());
 }
 
-static void DrawBlob(Bitmap *bitmap,int x0,int y0,int c)
+static uint32_t sqrti(uint32_t n)
 {
-	static const int rowlengths[32]=
-	{
-		6,12,16,20,  22,24,26,26, 28,28,30,30, 30,32,32,32,
-		32,32,32,30, 30,30,28,28, 26,26,24,22, 20,16,12,6
-	};
+	uint32_t s,t;
 
-	for(int row=0;row<32;row++)
-	DrawHorizontalLine(bitmap,x0-rowlengths[row]/2,y0+row-16,rowlengths[row],c);
+	#define sqrtBit(k) \
+	t = s+(1UL<<(k-1)); t <<= k+1; if (n >= t) { n -= t; s |= 1UL<<k; }
+
+	s=0;
+	if(n>=1<<30) { n-=1<<30; s=1<<15; }
+	sqrtBit(14); sqrtBit(13); sqrtBit(12); sqrtBit(11); sqrtBit(10);
+	sqrtBit(9); sqrtBit(8); sqrtBit(7); sqrtBit(6); sqrtBit(5);
+	sqrtBit(4); sqrtBit(3); sqrtBit(2); sqrtBit(1);
+	if(n>s<<1) s|=1;
+
+	#undef sqrtBit
+
+	return s;
 }

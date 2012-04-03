@@ -69,12 +69,12 @@ void Scroller(const char *text)
 
 	SetVGAHorizontalSync31kHz(ScrollerHSyncHandler);
 
-	while(!UserButtonState())
+	while(CurrentBitBinRow(&song) < 512)
 	{
 		WaitVBL();
 		int t=VGAFrameCounter()-first;
 
-		int offs=t*2;
+		int offs=t*3;
 		if(offs>4000-320) offs=4000-320;
 		data.scroller.scanline=0x20010000+offs;
 
@@ -188,14 +188,14 @@ void Scroller(const char *text)
 		}
 	}
 
-	SetBlankVGAScreenMode200();
+	SetBlankVGAScreenMode400();
 
-	while(UserButtonState());
+// 	while(UserButtonState());
 }
 
 static void ScrollerHSyncHandler()
 {
-	int line=HandleVGAHSync200();
+	int line=HandleVGAHSync400();
 	if(line<0) return;
 
 	if(line<128||line>=400-128)

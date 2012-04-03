@@ -2,4 +2,5 @@ glob:*.elf
 glob:*.bin
 glob:Build
 glob:.DS_Store
-upload.sh
+glob:upload.sh
+glob:MakeRadialTable

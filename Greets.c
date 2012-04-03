@@ -6,6 +6,8 @@
 #include "Graphics/Bitmap.h"
 #include "Graphics/Drawing.h"
 
+#include "Global.h"
+
 #ifndef TESTING
 #include "Button.h"
 #include "VGA.h"
@@ -118,7 +120,7 @@ void RevisionLogo(){
     
     logo_init();
 
-	while(!UserButtonState() && (!done))
+	while(CurrentBitBinRow(&song) < 128 && (!done))
 	{
 		WaitVBL();
 
@@ -131,7 +133,7 @@ void RevisionLogo(){
 
 	}
 
-	while(UserButtonState() && (!done));
+// 	while(UserButtonState() && (!done));
 }
 #endif //TESTING
 
