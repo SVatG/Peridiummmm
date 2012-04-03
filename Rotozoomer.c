@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <string.h>
 
-static void RotozoomHSYNCHandler();
+static void RotozoomHSyncHandler();
 static uint32_t sqrti(uint32_t n);
 
 static uint32_t PackCoordinates(int32_t x,int32_t y)
@@ -60,7 +60,7 @@ void Rotozoom()
 		}
 	}
 
-	SetVGAHorizontalSync31kHz(RotozoomHSYNCHandler);
+	SetVGAHorizontalSync31kHz(RotozoomHSyncHandler);
 
 	SetLEDs(0x5);
 
@@ -92,14 +92,14 @@ void Rotozoom()
 		}
 	}
 
-	SetBlankVGAScreenMode200();
+	SetBlankVGAScreenMode400();
 
 // 	while(UserButtonState());
 }
 
-static void RotozoomHSYNCHandler()
+static void RotozoomHSyncHandler()
 {
-	int line=HandleVGAHSync200();
+	int line=HandleVGAHSync400();
 	if(line<0) return;
 
 	register uint32_t r0 __asm__("r0")=data.rotozoomer.pos;

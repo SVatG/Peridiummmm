@@ -177,7 +177,7 @@ void SpanScreen()
 	}
 
 	WaitVBL();
-	SetBlankVGAScreenMode200();
+	SetBlankVGAScreenMode400();
 	DisableInterrupt(TIM1_UP_TIM10_IRQn);
 	DisableInterrupt(TIM1_CC_IRQn);
 	TIM1->CR1=0;
@@ -189,7 +189,7 @@ static bool stopped=false;
 
 static void SpanHSyncHandler()
 {
-	int line=HandleVGAHSync200();
+	int line=HandleVGAHSync400();
 	if(line<0) return;
 
 	TIM1->CR1|=TIM_CR1_CEN; // Start timer;
