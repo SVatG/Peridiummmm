@@ -56,7 +56,9 @@ void Rotozoom()
 			}
 
 			int offset=(y<<(16-5))|(i<<5)|x;
-			texture[offset]=RawRGB(red,green,blue);
+//			texture[offset]=RawRGB(red,green,blue);
+			int val=(r-2*i)/24;
+			texture[offset]=((val+124)*69069+423)*69069;
 		}
 	}
 
