@@ -79,7 +79,7 @@ void Greets(){
     
     greets_init();
 
-	while(!UserButtonState() && (!done))
+	while(CurrentBitBinRow(&song) < 1024)
 	{
 		WaitVBL();
 
@@ -120,7 +120,7 @@ void RevisionLogo(){
     
     logo_init();
 
-	while(CurrentBitBinRow(&song) < 128 && (!done))
+	while(CurrentBitBinRow(&song) < 128)
 	{
 		WaitVBL();
 
@@ -145,7 +145,7 @@ void logo_inner(Bitmap* currframe){
     } else if(tick < 67*3){
         render_text(currframe, " ", p, 100, revision_logo_glyph);
     } else if(tick < 67*4){
-        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, -((tick-67*3)*2);
+        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, -((tick-67*3)*2));
     } else {
         done = true;
     }
