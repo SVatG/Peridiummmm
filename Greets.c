@@ -6,6 +6,8 @@
 #include "Graphics/Bitmap.h"
 #include "Graphics/Drawing.h"
 
+#include "greetstars.h"
+
 #include "Global.h"
 
 #ifndef TESTING
@@ -44,8 +46,8 @@ int greetindex;
 greet_t *gprev, *gcur, *gnext;
 int tick,tock;
 bool done = false;
-point_t textpts1[200];
-point_t textpts2[200];
+point_t *textpts1;
+point_t *textpts2;
 
 void greets_init(){
     greetindex=1;
@@ -54,6 +56,10 @@ void greets_init(){
     gnext = greets+2;
     tick=-1;
     done = false;
+    textpts1 = data.greets.textpts1;
+    textpts2 = data.greets.textpts2;
+
+    greetstars_init();
 
 }
 
@@ -173,6 +179,9 @@ void greets_inner(Bitmap* currframe){
             greetindex = 1;
         }
     }
+
+    greetstars_draw(currframe);
+
     if(tick<= 34){ // construct cur / finish transition from prev
         // cur
         if(gcur->show){

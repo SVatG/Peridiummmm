@@ -79,6 +79,20 @@ inline int plen(const point_t a, const point_t b){
     return(r);
 }
 
+inline point_t pnorm(const point_t a, const point_t b, int len){
+    point_t delta = psub(b,a);
+    int curlen = abs(b.x-a.x) + abs(b.y-a.y);
+    if(curlen<10){
+        return b;
+    }
+    point_t r = a;
+    r.x += delta.x * len / curlen;
+    r.y += delta.y * len / curlen;
+    return r;
+}
+
+
+
 inline int min(int a, int b){
    return((a<b)?a:b);
 }

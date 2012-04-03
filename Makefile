@@ -55,6 +55,7 @@ C_FILES =	Accelerometer.c \
 		font.c \
 		bezier.c \
 		Greets.c \
+		greetstars.c \
 		warpfunc.c \
 		font_enri.c \
 		revision_logo.c \
