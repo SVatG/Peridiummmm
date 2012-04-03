@@ -74,7 +74,7 @@ void Scroller(const char *text)
 		WaitVBL();
 		int t=VGAFrameCounter()-first;
 
-		int offs=t*2;
+		int offs=t*3;
 		if(offs>4000-320) offs=4000-320;
 		data.scroller.scanline=0x20010000+offs;
 

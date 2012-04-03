@@ -64,7 +64,7 @@ void Rotozoom()
 
 	SetLEDs(0x5);
 
-	while(!UserButtonState())
+	while(CurrentBitBinRow(&song) < 640)
 	{
 		WaitVBL();
 		int t=VGAFrameCounter();
@@ -72,7 +72,7 @@ void Rotozoom()
 		SetLEDs(1<<((t/3)&3));
 
 		int32_t angle=isin(t*9)&1023;
-		int32_t scale=(icos(t*17)+Fix(2))/2;
+		int32_t scale=(icos(t*15)+Fix(2))/2;
 
 		int32_t dx=imul(scale,icos(angle));
 		int32_t dy=imul(scale,isin(angle));
@@ -94,7 +94,7 @@ void Rotozoom()
 
 	SetBlankVGAScreenMode200();
 
-	while(UserButtonState());
+// 	while(UserButtonState());
 }
 
 static void RotozoomHSYNCHandler()

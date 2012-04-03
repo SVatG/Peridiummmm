@@ -42,7 +42,7 @@ void Scroller2(const char *message)
 	int frame=0;
 	int first=VGAFrameCounter();
 	
-	while(!UserButtonState())
+	while(CurrentBitBinRow(&song) < 768)
 	{
 		WaitVBL();
 
@@ -62,9 +62,9 @@ void Scroller2(const char *message)
 		uint8_t* pixels = currframe->pixels;
 		
 		int t=VGAFrameCounter()-first;
-		int x=320-t;
+		int x=320-t*3;
 
-		SeedRandom(t>>7);
+		SeedRandom(CurrentBitBinRow(&song)>>3);
 		for(int ya = 0; ya < 200; ya += 20 ) {
 			for(int xa = 0; xa < 320; xa += 20 ) {
 				int val = (RandomInteger() + (t>>2)) % 48;
@@ -110,7 +110,7 @@ void Scroller2(const char *message)
 	}
 
 
-	while(UserButtonState());
+// 	while(UserButtonState());
 }
 
 static uint32_t sqrti(uint32_t n)
