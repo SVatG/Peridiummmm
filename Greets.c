@@ -6,8 +6,6 @@
 #include "Graphics/Bitmap.h"
 #include "Graphics/Drawing.h"
 
-#include "Global.h"
-
 #ifndef TESTING
 #include "Button.h"
 #include "VGA.h"
@@ -20,17 +18,20 @@ greet_t greets[] = {
     { {0,0}, NULL, 0, NULL, false}, // filler
     // pos,     text,   size,   show 
 	{ {40, 70}, "RNO", 130, &warp_perspective_1, true },
-	{ {120, 30}, "nuance", 70, &warp_perspective_2, true },
+	{ {120, 30}, "Nuance", 70, &warp_perspective_2, true },
 	{ {20, 60}, "mercury", 70, &warp_perspective_3, true },
-	{ {80, 50}, "never", 70, &warp_perspective_rotright, true },
-	{ {20, 110}, "alpha design", 50, &warp_perspective_2, true },
+	{ {80, 50}, "Never", 60, &warp_perspective_rotright, true },
+	{ {20, 110}, "Alpha Design", 50, &warp_perspective_2, true },
 	{ {60, 50}, "Stroboholics", 45, &warp_perspective_1, true },
 	{ {20, 60}, "Marvin Minsky", 45, &warp_perspective_1, true },
 	{ {40, 30}, "farbrausch", 55, &warp_perspective_1, true },
 	{ {25, 70}, "#mod_shrine", 50, &warp_perspective_1, true },
+	{ {15, 70}, "Lost Function", 40, &warp_perspective_1, true },
 	{ {30, 130}, "noisechanradio", 40, &warp_perspective_1, true },
 	{ {20, 40}, "ubiktune", 70, &warp_perspective_1, true },
-	{ {15, 70}, "3state", 40, &warp_perspective_1, true },
+	{ {15, 70}, "Cubicle", 40, &warp_perspective_1, true },
+    // 3state
+	{ {15, 70}, "monsquaz", 40, &warp_perspective_1, true },
 	{ {15, 70}, "fuckings 2 lamers", 40, &warp_perspective_1, true },
     { {0,0}, NULL, 0, NULL, false}, // filler
     { {0,0}, NULL, 0, NULL, false} // filler
@@ -95,7 +96,7 @@ void Greets(){
             ;
         
 
-        print_vga_line(currframe);
+//        print_vga_line(currframe);
 
 	}
 
@@ -120,7 +121,7 @@ void RevisionLogo(){
     
     logo_init();
 
-	while(CurrentBitBinRow(&song) < 128 && (!done))
+	while(!UserButtonState() && (!done))
 	{
 		WaitVBL();
 
@@ -133,7 +134,7 @@ void RevisionLogo(){
 
 	}
 
-// 	while(UserButtonState() && (!done));
+	while(UserButtonState() && (!done));
 }
 #endif //TESTING
 
@@ -145,7 +146,7 @@ void logo_inner(Bitmap* currframe){
     } else if(tick < 67*3){
         render_text(currframe, " ", p, 100, revision_logo_glyph);
     } else if(tick < 67*4){
-        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, -((tick-67*3)*2));
+        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, -(tick*2-67*3));
     } else {
         done = true;
     }
