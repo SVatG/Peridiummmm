@@ -55,7 +55,7 @@ void Starfield()
 	int nearestindex=0;
 	int first=VGAFrameCounter();
 
-	while(!UserButtonState())
+	while(CurrentBitBinRow(&song) < 1152)
 	{
 		WaitVBL();
 
@@ -87,7 +87,7 @@ void Starfield()
 			DrawRLEBitmap(currframe,sprites[sprite],sx-16,sy-16);
 		}
 
-		int rotation=(((t/90)*124123)/3124)%5-2;
+		int rotation=((CurrentBitBinRow(&song) >> 4) % 5) - 2;
 
 		switch(rotation)
 		{
@@ -139,5 +139,5 @@ void Starfield()
 		frame++;
 	}
 
-	while(UserButtonState());
+// 	while(UserButtonState());
 }

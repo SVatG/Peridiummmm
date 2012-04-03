@@ -99,7 +99,7 @@ void Greets(){
 
 	}
 
-	while(UserButtonState() && (!done));
+// 	while(UserButtonState() && (!done));
 }
 
 void RevisionLogo(){
@@ -142,10 +142,10 @@ void logo_inner(Bitmap* currframe){
     point_t p={100,70};
     if(tick<67){
         render_text_partial(currframe, " ", p, 100, revision_logo_glyph, tick*2);
-    } else if(tick < 67*3){
+    } else if(tick < 67*2){
         render_text(currframe, " ", p, 100, revision_logo_glyph);
-    } else if(tick < 67*4){
-        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, -((tick-67*3)*2));
+    } else if(tick < 67*3){
+        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, -((tick-67*2)*2));
     } else {
         done = true;
     }
