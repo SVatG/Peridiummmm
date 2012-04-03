@@ -31,6 +31,25 @@ union GlobalData data;
 
 BitBinSong song;
 
+void waitForMonitor() {
+	uint8_t *framebuffer1=(uint8_t *)0x20000000;	
+	uint8_t *framebuffer2=(uint8_t *)0x20010000;
+
+	Bitmap frame1,frame2;
+	InitializeBitmap(&frame1,320,200,320,framebuffer1);
+	InitializeBitmap(&frame2,320,200,320,framebuffer2);
+	ClearBitmap(&frame1);
+	ClearBitmap(&frame2);
+
+	SetVGAScreenMode320x200(framebuffer1);
+
+	SetFrameBuffer(framebuffer1);
+	
+	for(int i = 0; i < 500; i++) {
+		WaitVBL();
+	}
+}
+
 int main()
 {
 	InitializeLEDs();
@@ -46,11 +65,7 @@ int main()
 	SetAudioVolume(0xEF);
 	InitializeVGAScreenMode400();
 
-	// "Monitor turns on"
-	for(int i = 0; i < 150; i++) {
-		WaitVBL();
-		// TODO set a black framebuffer
-	}
+	waitForMonitor();
 	
 	PlayAudioWithCallback(AudioCallback,&song);
 
@@ -77,7 +92,7 @@ int main()
 		RevisionLogo();
 		Scroller3("Welcome to our little prod for the STM32F4. Lets start things off with some lovely full-screen twisters.");
 		SpanScreen();
-		Scroller("4000 pixels of horizontal resulution, can your \"high definition\" screen handle it? Next is our cute and pop rotozoomer.");
+		Scroller("4000 pixels of horizontal resolution, can your \"high definition\" screen handle it? Next is our cute and pop rotozoomer.");
 		Rotozoom();
 		Scroller2("Who doesn't love those? 640x480 at 70hz. 192 kb ram 1 mb flash infinite possibilities. Time for greets:");
 		Greets();	
