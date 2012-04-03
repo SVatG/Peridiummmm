@@ -67,9 +67,9 @@ void bezier_draw_partial(Bitmap *dest, bezier_t bez, int ratio){
             t->p[2] = bp2;
             ratios[stackpos] = r*2-128;
         } else {
-            bezier_setpixel(dest, b->p[0], 255);
+            bezier_setpixel(dest, b->p[0], 182);
             if(r>=64){
-                bezier_setpixel(dest, b->p[1], 255);
+                bezier_setpixel(dest, b->p[1], 182);
             }
         }
     }
@@ -124,21 +124,24 @@ void bezier_setpixel(Bitmap *dest, point_t p, uint8_t colour){
         printf("%i\n",distance);
         ctr=0;
     }*/
-    int intensity = 7-(distance * 4) / BEZ_SCALEDOWN;
+    int intensity = 9-(distance * 4) / BEZ_SCALEDOWN;
     if(intensity<0)
         intensity=0;
+    if(intensity>8)
+        intensity=8;
     
 //    image[p.x+(p.y)*WIDTH]=colour;
-    colour = (intensity<<5) + (intensity<<2) + (intensity>>1);
-    int oldpixel = dest->pixels[x+(HEIGHT-y-1)*WIDTH];
-    int oldintensity = (oldpixel>>5)&7;
-    if(oldintensity<intensity){
-        dest->pixels[x+(HEIGHT-y-1)*WIDTH] = colour;
-    }
+    uint8_t oldpixel = dest->pixels[x+(HEIGHT-y-1)*WIDTH];
+    int colour_decomposed = (colour * ((1<<(8+16))|(1<<(6+8))|(1<<3))) & 0x03070700;
+    int oldpixel_decomposed = (oldpixel * ((1<<(8+16))|(1<<(6+8))|(1<<3))) & 0x03070700;
+    int colour_scaled = (colour_decomposed*intensity+0x03010100)>>3;
+    int newcolour = (colour_scaled) & 0x03070700; //FIXME: add oldpixel here or something
+    int newcolour2 = ((newcolour * ((1)|(1<<(2+8))|(1<<(5+16)))) & 0xff000000)>>24;
+//    printf("%x %x %x %x\n",colour, newcolour, colour_scaled, newcolour);
+    dest->pixels[x+(HEIGHT-y-1)*WIDTH] = newcolour2;
 #ifdef DEBUG
     callcount_setpixel++;
 #endif //DEBUG
-
 }
 
 /*int bezier_len(bezier_t b){

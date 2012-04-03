@@ -179,8 +179,10 @@ void get_text_points(point_t *dest, int *destsize, char* text, point_t pos, int 
             ctrlpoint = b.p[1];
 
             //TODO: calculate normal, scale it, and place the control point so that the exiting bezier has a certain curvature
-            // for now: we mirror the controlpoint on the endpoint
             ctrlpoint = psub(padd(endpoint, endpoint), ctrlpoint); 
+            ctrlpoint = pnorm(endpoint, ctrlpoint, size*BEZ_SCALEDOWN/2); 
+            // for now: we mirror the controlpoint on the endpoint
+//            ctrlpoint = psub(padd(endpoint, endpoint), ctrlpoint); 
             dest[destpos*2] = endpoint;
             dest[destpos*2+1] = ctrlpoint;
             destpos++;
@@ -234,6 +236,7 @@ void get_text_points_warped(point_t *dest, int *destsize, char* text, point_t po
             //TODO: calculate normal, scale it, and place the control point so that the exiting bezier has a certain curvature
             // for now: we mirror the controlpoint on the endpoint
             ctrlpoint = psub(padd(endpoint, endpoint), ctrlpoint); 
+            ctrlpoint = pnorm(endpoint, ctrlpoint, size*BEZ_SCALEDOWN/2); 
             dest[destpos*2] = endpoint;
             dest[destpos*2+1] = ctrlpoint;
             destpos++;

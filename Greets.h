@@ -3,6 +3,8 @@
 
 #include "font.h"
 #include "Graphics/Bitmap.h"
+#include "greetstars.h"
+
 
 typedef struct{
     point_t pos;
@@ -12,6 +14,14 @@ typedef struct{
 //    warpstruct_t warpparams;
     bool show;
 } greet_t;
+
+struct GreetsData
+{
+    greetstars_t stars_a[GREETSTARS_COUNT];
+    greetstars_t stars_b[GREETSTARS_COUNT];
+    point_t textpts1[200];
+    point_t textpts2[200];
+};
         
 
 void greets_init();

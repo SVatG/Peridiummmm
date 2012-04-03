@@ -13,6 +13,7 @@
 #include "Scroller3.h"
 #include "Radial.h"
 #include "BitBin.h"
+#include "Greets.h"
 
 extern BitBinSong song;
 
@@ -29,6 +30,7 @@ extern union GlobalData
 	struct Scroller2Data scroller2;
 	struct Scroller3Data scroller3;
 	struct RadialData radial;
+    struct GreetsData greets;
 } data;
 
 #endif
