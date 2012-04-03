@@ -21,6 +21,7 @@
 #include "LogoShow.h"
 #include "Greets.h"
 #include "Scroller2.h"
+#include "Scroller3.h"
 
 static void AudioCallback(void *context,int buffer);
 int16_t *buffers[2]={ (int16_t *)0x2001fa00,(int16_t *)0x2001fc00 };
@@ -54,7 +55,8 @@ int main()
 
 	for(;;)
 	{
-		RadialScroller("I got stash upon stash, and it ain't no' but cash.");
+		Scroller3();
+		RadialScroller("I got stash upon stash, and it ain't no' but cash.");		
 		Scroller2();
 		RevisionLogo();
 		Rasterize();

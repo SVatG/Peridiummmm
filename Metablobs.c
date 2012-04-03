@@ -22,8 +22,6 @@
 #include "Metablobs.h"
 #include "Global.h"
 
-extern const RLEBitmap Hakkero;
-
 void Metablobs()
 {
 	uint8_t *framebuffer1=(uint8_t *)0x20000000;

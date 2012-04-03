@@ -45,6 +45,7 @@ C_FILES =	Accelerometer.c \
 		Graphics/ColourFont.c \
 		Graphics/DrawingBitmaps.c \
 		Graphics/DrawingLines.c \
+		Graphics/DrawingCircles.c \
 		Graphics/DrawingPixels.c \
 		Graphics/DrawingRectangles.c \
 		Graphics/DrawingRLEBitmaps.c \
@@ -65,6 +66,8 @@ C_FILES =	Accelerometer.c \
 		logo.c \
 		LogoShow.c \
 		Scroller2.c \
+		Scroller3.c \
+		small_logo.c \
 			
 S_FILES = 
 
