@@ -1926,7 +1926,7 @@ const BitBinNote channel0[1920]=
 
 const BitBinNote channel1[1920]=
 {
-	{ 0xff,~0,~0, ~0,0x00 },
+	{ 0xff,~0,~0,'M',0x34 },
 	{ 0xff,~0,~0, ~0,0x00 },
 	{ 0xff,~0,~0, ~0,0x00 },
 	{ 0xff,~0,~0, ~0,0x00 },
@@ -3850,7 +3850,7 @@ const BitBinNote channel1[1920]=
 
 const BitBinNote channel2[1920]=
 {
-	{ 0xff,~0,~0, ~0,0x00 },
+	{ 0xff,~0,~0,'M',0x34 },
 	{ 0xff,~0,~0, ~0,0x00 },
 	{ 0xff,~0,~0, ~0,0x00 },
 	{ 0xff,~0,~0, ~0,0x00 },
@@ -5774,7 +5774,7 @@ const BitBinNote channel2[1920]=
 
 const BitBinNote channel3[1920]=
 {
-	{ 0xff,~0,~0, ~0,0x00 },
+	{ 0xff,~0,~0,'M',0x2A },
 	{ 0xff,~0,~0, ~0,0x00 },
 	{ 0xff,~0,~0, ~0,0x00 },
 	{ 0xff,~0,~0, ~0,0x00 },
@@ -7698,7 +7698,7 @@ const BitBinNote channel3[1920]=
 
 const BitBinNote channel4[1920]=
 {
-	{ 0xff,~0,~0, ~0,0x00 },
+	{ 0xff,~0,~0,'M',0x2A },
 	{ 0xff,~0,~0, ~0,0x00 },
 	{ 0xff,~0,~0, ~0,0x00 },
 	{ 0xff,~0,~0, ~0,0x00 },
