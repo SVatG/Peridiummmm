@@ -1,7 +1,7 @@
 #ifndef __BEZIER_H_
 #define __BEZIER_H_
 
-#define BEZ_SCALEDOWN 4192 
+#define BEZ_SCALEDOWN 1024 
 #define BEZ_STEPS 128
 
 //#include "main.h"

@@ -15,22 +15,23 @@ extern glyph_t font_enri_glyph[];
 extern glyph_t revision_logo_glyph[];
 
 greet_t greets[] = {
-    { {0,0}, NULL, 0, false}, // filler
+    { {0,0}, NULL, 0, NULL, false}, // filler
     // pos,     text,   size,   show 
-	{ {40, 90}, "RNO", 130, true },
-	{ {80, 30}, "nuance", 70, true },
-	{ {20, 60}, "mercury", 70, true },
-	{ {50, 20}, "never", 70, true },
-	{ {20, 110}, "alpha design", 50, true },
-	{ {60, 50}, "Stroboholics", 45, true },
-	{ {20, 140}, "Marvin Minsky", 45, true },
-	{ {40, 30}, "farbrausch", 55, true },
-	{ {25, 70}, "#mod_shrine", 50, true },
-	{ {30, 130}, "noisechanradio", 40, true },
-	{ {20, 40}, "ubiktune", 70, true },
-	{ {15, 70}, "fuckings 2 lamers", 40, true },
-    { {0,0}, NULL, 0, false}, // filler
-    { {0,0}, NULL, 0, false} // filler
+	{ {40, 70}, "RNO", 130, &warp_perspective_1, true },
+	{ {120, 30}, "nuance", 70, &warp_perspective_2, true },
+	{ {20, 60}, "mercury", 70, &warp_perspective_3, true },
+	{ {80, 50}, "never", 70, &warp_perspective_rotright, true },
+	{ {20, 110}, "alpha design", 50, &warp_perspective_2, true },
+	{ {60, 50}, "Stroboholics", 45, &warp_perspective_1, true },
+	{ {20, 60}, "Marvin Minsky", 45, &warp_perspective_1, true },
+	{ {40, 30}, "farbrausch", 55, &warp_perspective_1, true },
+	{ {25, 70}, "#mod_shrine", 50, &warp_perspective_1, true },
+	{ {30, 130}, "noisechanradio", 40, &warp_perspective_1, true },
+	{ {20, 40}, "ubiktune", 70, &warp_perspective_1, true },
+	{ {15, 70}, "3state", 40, &warp_perspective_1, true },
+	{ {15, 70}, "fuckings 2 lamers", 40, &warp_perspective_1, true },
+    { {0,0}, NULL, 0, NULL, false}, // filler
+    { {0,0}, NULL, 0, NULL, false} // filler
 };
 
 
@@ -137,12 +138,12 @@ void RevisionLogo(){
 void logo_inner(Bitmap* currframe){
     tick++;
     point_t p={100,70};
-    if(tick<64){
+    if(tick<67){
         render_text_partial(currframe, " ", p, 100, revision_logo_glyph, tick*2);
-    } else if(tick < 128){
+    } else if(tick < 67*3){
         render_text(currframe, " ", p, 100, revision_logo_glyph);
-    } else if(tick < 196){
-        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, -(tick*2-256));
+    } else if(tick < 67*4){
+        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, -(tick*2-67*3));
     } else {
         done = true;
     }
@@ -170,25 +171,25 @@ void greets_inner(Bitmap* currframe){
     if(tick<= 34){ // construct cur / finish transition from prev
         // cur
         if(gcur->show){
-            render_text_partial(currframe, gcur->text, gcur->pos, gcur->size, font_enri_glyph, tick*128/34);
+            render_text_partial_warped(currframe, gcur->text, gcur->pos, gcur->size, font_enri_glyph, tick*128/34, gcur->warpfunc, tick+33);
         }
         // prev
         if(gprev->show && gcur->show){
             int a=200,b=200;
-            get_text_points(textpts1, &a, gprev->text, gprev->pos, gprev->size,font_enri_glyph, false);
-            get_text_points(textpts2, &b, gcur->text, gcur->pos, gcur->size,font_enri_glyph, true);
+            get_text_points_warped(textpts1, &a, gprev->text, gprev->pos, gprev->size,font_enri_glyph, false, gprev->warpfunc, tick+33+67);
+            get_text_points_warped(textpts2, &b, gcur->text, gcur->pos, gcur->size,font_enri_glyph, true, gcur->warpfunc, tick+33);
             make_transition(currframe, textpts1, a, textpts2, b, (tick*128/34)-128);
         }
     } else { // destruct cur / transition to next
         // cur
         if(gcur->show){
-            render_text_partial(currframe, gcur->text, gcur->pos, gcur->size, font_enri_glyph, -(tick-34)*128/33);
+            render_text_partial_warped(currframe, gcur->text, gcur->pos, gcur->size, font_enri_glyph, -(tick-34)*128/33, gcur->warpfunc, tick+33);
         }
         // next
         if(gnext->show && gcur->show){
             int a=200,b=200;
-            get_text_points(textpts1, &a, gcur->text, gcur->pos, gcur->size, font_enri_glyph, false);
-            get_text_points(textpts2, &b, gnext->text, gnext->pos, gnext->size, font_enri_glyph, true);
+            get_text_points_warped(textpts1, &a, gcur->text, gcur->pos, gcur->size, font_enri_glyph, false, gcur->warpfunc, tick+33);
+            get_text_points_warped(textpts2, &b, gnext->text, gnext->pos, gnext->size, font_enri_glyph, true, gnext->warpfunc, tick+33-67);
             make_transition(currframe, textpts1, a, textpts2, b, (tick-34)*128/33);
         }
     }

@@ -51,6 +51,7 @@ C_FILES =	Accelerometer.c \
 		font.c \
 		bezier.c \
 		Greets.c \
+		warpfunc.c \
 		font_enri.c \
 		revision_logo.c \
 		VectorLibrary/VectorFixed.c \

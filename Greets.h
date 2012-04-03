@@ -8,6 +8,8 @@ typedef struct{
     point_t pos;
     char* text;
     int size;
+    warpfunc_t warpfunc; 
+//    warpstruct_t warpparams;
     bool show;
 } greet_t;
         

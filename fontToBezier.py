@@ -112,7 +112,7 @@ def bezier_to_header(bezier, scalefactor):
     return s
 
 
-def convert_svg_font(filename, varbase="font_foo", whichchars=None, scalefactor=1024):
+def convert_svg_font(filename, varbase="font_foo", whichchars=None, scalefactor=256):
     from xml.etree.ElementTree import ElementTree
     tree = ElementTree()
     tree.parse(filename)
@@ -201,7 +201,7 @@ def convert_svg_font(filename, varbase="font_foo", whichchars=None, scalefactor=
 
 
 
-def convert_svg(filename, varbase, groupcount, scalefactor=1024):
+def convert_svg(filename, varbase, groupcount, scalefactor=256):
     from xml.etree.ElementTree import ElementTree
     tree = ElementTree()
     tree.parse(filename)

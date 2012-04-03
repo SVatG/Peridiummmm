@@ -53,6 +53,13 @@ inline point_t pavg(const point_t a, const point_t b){
     return(r);
 }
 
+inline point_t pmul(const point_t a, const int b){
+    point_t r;
+    r.x = a.x * b;
+    r.y = a.y * b;
+    return(r);
+}
+
 inline int p_inrect(const point_t a, const point_t r1, const point_t r2){
     int r = 1;
     if(a.x < r1.x || a.x > r2.x)
