@@ -39,7 +39,7 @@ void LogoShow() {
 	}
 
 	int32_t drawc = 0;
-	while(!UserButtonState())
+	while(CurrentBitBinRow(&song) < 64)
 	{
 		WaitVBL();
 		Bitmap *currframe;
@@ -86,5 +86,5 @@ void LogoShow() {
 		t++;
 	}
 
-	while(UserButtonState());
+// 	while(UserButtonState());
 }

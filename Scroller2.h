@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-void Scroller2();
+void Scroller2(const char *message);
 
 struct Scroller2Data {
 	uint8_t barTable[3][16];

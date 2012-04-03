@@ -12,6 +12,9 @@
 #include "Scroller2.h"
 #include "Scroller3.h"
 #include "Radial.h"
+#include "BitBin.h"
+
+extern BitBinSong song;
 
 extern union GlobalData
 {

@@ -69,7 +69,7 @@ void Scroller(const char *text)
 
 	SetVGAHorizontalSync31kHz(ScrollerHSyncHandler);
 
-	while(!UserButtonState())
+	while(CurrentBitBinRow(&song) < 512)
 	{
 		WaitVBL();
 		int t=VGAFrameCounter()-first;
@@ -190,7 +190,7 @@ void Scroller(const char *text)
 
 	SetBlankVGAScreenMode200();
 
-	while(UserButtonState());
+// 	while(UserButtonState());
 }
 
 static void ScrollerHSyncHandler()

@@ -17,7 +17,7 @@ static uint32_t sqrti(uint32_t n);
 
 extern Font OLFont;
 
-void Scroller2()
+void Scroller2(const char *message)
 {
 	uint8_t *framebuffer1=(uint8_t *)0x20000000;
 	uint8_t *framebuffer2=(uint8_t *)0x20010000;
@@ -41,8 +41,6 @@ void Scroller2()
 
 	int frame=0;
 	int first=VGAFrameCounter();
-
-	const char *message="Look out honey coz I'm using technology";
 	
 	while(!UserButtonState())
 	{

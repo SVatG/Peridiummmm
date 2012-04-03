@@ -19,7 +19,7 @@ static uint32_t sqrti(uint32_t n);
 extern Font OLFont;
 extern const RLEBitmap smalllogo;
 
-void Scroller3()
+void Scroller3(const char *message)
 {
 	uint8_t *framebuffer1=(uint8_t *)0x20000000;
 	uint8_t *framebuffer2=(uint8_t *)0x20010000;
@@ -43,14 +43,12 @@ void Scroller3()
 
 	int frame=0;
 	int first=VGAFrameCounter();
-
-	const char *message="Look out honey coz I'm using technology";
-
+	
 	for(int c = 0; c < 42; c++ ) {
 		data.scroller3.circles[c] = IntToFixed(((c + 1) * 10))/28;
 	}
 	
-	while(!UserButtonState())
+	while(CurrentBitBinRow(&song) < 256)
 	{
 		WaitVBL();
 
@@ -70,7 +68,7 @@ void Scroller3()
 		uint8_t* pixels = currframe->pixels;
 		
 		int t=VGAFrameCounter()-first;
-		int x=320-t;
+		int x=320-(t*3);
 		
 		uint8_t cols[] = {
 			RawRGB(7,0,2),
@@ -94,7 +92,7 @@ void Scroller3()
 		}
 
 
-		int y=(isin(t*33)>>7)+100-8;
+		int y=(isin((t*30))>>7)+100-8;
 
 		DrawHorizontalLine(currframe, 0, y-3, 320, RawRGB(7,7,3));
 		for(int yd = -2; yd < 17; yd++) {
@@ -118,7 +116,7 @@ void Scroller3()
 	}
 
 
-	while(UserButtonState());
+// 	while(UserButtonState());
 }
 
 static uint32_t sqrti(uint32_t n)

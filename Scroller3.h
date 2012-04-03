@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-void Scroller3();
+void Scroller3(const char *message);
 
 struct Scroller3Data {
 	int32_t circles[21];

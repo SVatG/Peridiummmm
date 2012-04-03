@@ -57,6 +57,7 @@ static inline bool IsBitBinSongStopped(BitBinSong *self) { return self->stopped;
 static inline bool SetBitBinSongStopped(BitBinSong *self,bool stopped) { self->stopped=stopped; }
 
 static inline int CurrentBitBinRow(BitBinSong *self) { return self->currentrow; }
+static inline int CurrentBitBinTick(BitBinSong *self) { return self->currenttick; }
 
 static inline BitBinNote BitBinNoteAtRow(BitBinSong *self,int channel,int row)
 {

@@ -17,7 +17,7 @@ static uint32_t sqrti(uint32_t n);
 
 extern Font OLFont;
 
-void Epileptor()
+void Epileptor(const char* message)
 {
 	uint8_t *framebuffer1=(uint8_t *)0x20000000;
 	uint8_t *framebuffer2=(uint8_t *)0x20010000;
@@ -73,8 +73,6 @@ void Epileptor()
 			break;
 		}
 	}
-
-const char *message="Look out honey coz I'm using technology";
 
 	while(!UserButtonState())
 	{

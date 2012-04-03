@@ -99,7 +99,7 @@ void SpanScreen()
 
 	Span spans[32];
 
-	while(!UserButtonState())
+	while(CurrentBitBinRow(&song) < 384)
 	{
 		WaitVBL();
 
