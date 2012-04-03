@@ -10,6 +10,7 @@
 #include "SpanScreen.h"
 #include "LogoShow.h"
 #include "Scroller2.h"
+#include "Radial.h"
 
 extern union GlobalData
 {
@@ -22,6 +23,7 @@ extern union GlobalData
 	struct SpanScreenData spanscreen;
 	struct LogoShowData logoshow;
 	struct Scroller2Data scroller2;
+	struct RadialData radial;
 } data;
 
 #endif

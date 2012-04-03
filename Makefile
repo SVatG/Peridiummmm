@@ -27,7 +27,9 @@ C_FILES =	Accelerometer.c \
 		Epileptor.c \
 		LED.c \
 		Main.c \
+		OL16Font.c \
 		OLFont.c \
+		Radial.c \
 		Random.c \
 		Rotozoomer.c \
 		Scroller.c \
@@ -39,6 +41,7 @@ C_FILES =	Accelerometer.c \
 		TestSong.c \
 		VGA.c \
 		Graphics/Bitmap.c \
+		Graphics/MonoFont.c \
 		Graphics/ColourFont.c \
 		Graphics/DrawingBitmaps.c \
 		Graphics/DrawingLines.c \

@@ -7,11 +7,22 @@
 
 #include "Graphics/Bitmap.h"
 #include "Graphics/Drawing.h"
+#include "Graphics/Font.h"
+
+extern Font OL16Font;
+
+#define SAMPLES 4
+#define WIDTH 106
+#define HEIGHT 66
 
 #include "RadialTables.h"
 
 #include <stdint.h>
 #include <string.h>
+
+static void RenderBackground(int t,int n,uint8_t *screen);
+static void RenderRadial(int t,uint8_t *screen,
+const uint32_t *lookup1,const uint32_t *lookup2,const uint32_t *lookup3,const uint32_t *lookup4);
 
 void RadialScroller(const char *text)
 {
@@ -30,6 +41,7 @@ void RadialScroller(const char *text)
 	int nearestindex=0;
 	int first=VGAFrameCounter();
 
+int last_t=0;
 	while(!UserButtonState())
 	{
 		WaitVBL();
@@ -38,57 +50,20 @@ void RadialScroller(const char *text)
 		if(frame&1) { currframe=&frame2; SetFrameBuffer(framebuffer1); }
 		else { currframe=&frame1; SetFrameBuffer(framebuffer2); }
 
-		ClearBitmap(currframe);
-
 		int t=VGAFrameCounter()-first;
 
-		RenderBackground(t,currframe->pixels);
-		void RenderRadial(t,40,40,currframe->pixels,
-		lookup1,lookup2,lookup3,lookup4);
+		ClearBitmap(currframe);
+		DrawString(currframe,&OL16Font,320-t,HEIGHT+10,255,text);
 
+		RenderRadial(t,currframe->pixels,lookup1,lookup2,lookup3,lookup4);
+last_t=t;
 		frame++;
 	}
 
 	while(UserButtonState());
 }
 
-#define SAMPLES 4
-#define WIDTH 106
-#define HEIGHT 66
-
-static inline void WritePixel8(uint8_t *screen,int x,int y,int c)
-{
-	screen[y*320+x]=c;
-/*	uint16_t val=screen[y*128+(x>>1)];
-	if(x&1) val=(val&0x00ff)|(c<<8);
-	else val=(val&0xff00)|(c);
-	screen[y*128+(x>>1)]=val;*/
-}
-
-static inline int ReadPixel8(uint8_t *screen,int x,int y)
-{
-	return screen[y*320+x];
-/*	uint16_t val=screen[y*128+(x>>1)];
-	if(x&1) return val>>8;
-	else return val&0xff;*/
-}
-
-static void RenderBackground(int t,uint8_t *screen)
-{
-/*	uint32_t *ptr=(uint32_t *)screen;
-	for(int i=0;i<WIDTH*HEIGHT/4;i++) *ptr++=0;*/
-
-	for(int y=0;y<8;y++)
-	for(int x=0;x<8;x++)
-	{
-		WritePixel8(screen,x+WIDTH/3,y+HEIGHT/3,255);
-		WritePixel8(screen,x+2*WIDTH/3-8,y+HEIGHT/3,255);
-		WritePixel8(screen,x+WIDTH/3,y+2*HEIGHT/3-8,255);
-		WritePixel8(screen,x+2*WIDTH/3-8,y+2*HEIGHT/3-8,255);
-	}
-}
-
-static inline void RenderPixel(uint8_t *pixel,uint32_t *lookup)
+static inline void RenderPixel(uint8_t *pixel,const uint32_t *lookup)
 {
 	int sum=*pixel<<2+14;
 	for(int i=0;i<SAMPLES;i++)
@@ -110,7 +85,7 @@ static inline void RenderPixel(uint8_t *pixel,uint32_t *lookup)
 	*pixel=sum;
 }
 
-static void RenderRadial(int t,int cx,int cy,uint8_t *screen,
+static void RenderRadial(int t,uint8_t *screen,
 const uint32_t *lookup1,const uint32_t *lookup2,const uint32_t *lookup3,const uint32_t *lookup4)
 {
 	#if 0
@@ -309,63 +284,59 @@ const uint32_t *lookup1,const uint32_t *lookup2,const uint32_t *lookup3,const ui
 
 	#else
 
-	uint32_t *lookup;
+	const uint32_t *lookup;
 	uint8_t *pixel;
 
 	lookup=lookup1;
-	pixel=&screen[cx-1+(cy-1)*320];
-	for(int y=cy-1;y>=0;y--)
+	pixel=&screen[WIDTH-1+(HEIGHT-1)*320];
+	for(int y=HEIGHT-1;y>=0;y--)
 	{
-		for(int x=cx-1;x>=0;x--)
+		for(int x=WIDTH-1;x>=0;x--)
 		{
 			RenderPixel(pixel,lookup);
 			lookup+=SAMPLES;
 			pixel--;
 		}
-		pixel-=WIDTH-cx;
-		lookup+=(WIDTH-cx)*SAMPLES;
+		pixel-=320-WIDTH;
 	}
 
 	lookup=lookup2;
-	pixel=&screen[cx+(cy-1)*320];
-	for(int y=cy-1;y>=0;y--)
+	pixel=&screen[WIDTH+(HEIGHT-1)*320];
+	for(int y=HEIGHT-1;y>=0;y--)
 	{
-		for(int x=cx;x<WIDTH;x++)
+		for(int x=WIDTH;x<2*WIDTH;x++)
 		{
 			RenderPixel(pixel,lookup);
 			lookup+=SAMPLES;
 			pixel++;
 		}
-		pixel+=cx-2*WIDTH;
-		lookup+=cx*SAMPLES;
+		pixel-=320+WIDTH;
 	}
 
 	lookup=lookup3;
-	pixel=&screen[(cx-1)+cy*320];
-	for(int y=cy;y<HEIGHT;y++)
+	pixel=&screen[(WIDTH-1)+HEIGHT*320];
+	for(int y=HEIGHT;y<2*HEIGHT;y++)
 	{
-		for(int x=cx-1;x>=0;x--)
+		for(int x=WIDTH-1;x>=0;x--)
 		{
 			RenderPixel(pixel,lookup);
 			lookup+=SAMPLES;
 			pixel--;
 		}
-		pixel+=cx+WIDTH;
-		lookup+=(WIDTH-cx)*SAMPLES;
+		pixel+=320+WIDTH;
 	}
 
 	lookup=lookup4;
-	pixel=&screen[cx+cy*320];
-	for(int y=cy;y<HEIGHT;y++)
+	pixel=&screen[WIDTH+HEIGHT*320];
+	for(int y=HEIGHT;y<2*HEIGHT;y++)
 	{
-		for(int x=cx;x<WIDTH;x++)
+		for(int x=WIDTH;x<2*WIDTH;x++)
 		{
 			RenderPixel(pixel,lookup);
 			lookup+=SAMPLES;
 			pixel++;
 		}
-		pixel+=cx;
-		lookup+=cx*SAMPLES;
+		pixel+=320-WIDTH;
 	}
 
 	#endif

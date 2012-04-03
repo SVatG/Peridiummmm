@@ -5,6 +5,7 @@
 #define SAMPLES 4
 #define WIDTH 106
 #define HEIGHT 66
+#define BytesPerRow 320
 
 static uint32_t lookup1[HEIGHT][WIDTH][SAMPLES];
 static uint32_t lookup2[HEIGHT][WIDTH][SAMPLES];
@@ -25,7 +26,7 @@ int main()
 		int ix=-(float)(i+1)*dx*256;
 		int iy=-(float)(i+1)*dy*256;
 
-		int offs=(iy>>8)*128+(ix>>8);
+		int offs=(iy>>8)*BytesPerRow+(ix>>8);
 		int xblend=(ix&0xff)>>1;
 		int yblend=(iy&0xff)>>1;
 

@@ -54,6 +54,7 @@ int main()
 
 	for(;;)
 	{
+		RadialScroller("I got stash upon stash, and it ain't no' but cash.");
 		Scroller2();
 		RevisionLogo();
 		Rasterize();
