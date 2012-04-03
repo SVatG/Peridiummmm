@@ -74,7 +74,7 @@ void Epileptor(const char* message)
 		}
 	}
 
-	while(!UserButtonState())
+	while(CurrentBitBinRow(&song) < 1280)
 	{
 		WaitVBL();
 
@@ -97,7 +97,7 @@ void Epileptor(const char* message)
 		}
 
 		int t=VGAFrameCounter()-first;
-		int x=320-t;
+		int x=320-t*2;
 
 		for(int i=0;i<NumberOfScrollerStars;i++)
 		{

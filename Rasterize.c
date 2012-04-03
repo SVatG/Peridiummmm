@@ -356,7 +356,39 @@ void RasterizeInit() {
 
 inline static void RasterizeTest(uint8_t* image) {
 	int32_t rotcnt = (VGAFrame - startFrame);
-	
+
+	int32_t render_faces_total_start = 0;
+	int32_t render_faces_rad = numFaces_rad;
+	int32_t render_faces_total_end = numFaces+render_faces_rad;
+
+	int32_t rowd = CurrentBitBinRow(&song) - 1600;
+	if(rowd < 192) {
+		render_faces_total_start = 0;
+		render_faces_rad = 0;		
+		render_faces_total_end = numFaces;
+	}
+	else if(rowd < 202) {
+		render_faces_total_start = 0;
+		render_faces_rad = numFaces_rad / (202 - rowd)
+		render_faces_total_end = numFaces
+	}
+	else if(rowd < 305) {
+		render_faces_total_start = 0;
+		render_faces_rad = numFaces_rad;
+		render_faces_total_end = numFaces+render_faces_rad;
+	}
+	else if(rowd < 315 {
+		render_faces_total_start = (numFaces+numFaces_rad)/(rowd - 305);
+		render_faces_rad = numFaces_rad;
+		render_faces_total_end = numFaces+render_faces_rad;
+	}
+	else {
+		render_faces_total_start = 0;
+		render_faces_rad = 0;
+		render_faces_total_end = 0;
+	}
+
+
 	// Do a background
 	for(int i=0;i<NumberOfDotStars;i++){
 		data.rasterizer.dotstars[i].x-=data.rasterizer.dotstars[i].dx;
@@ -420,14 +452,11 @@ inline static void RasterizeTest(uint8_t* image) {
 
 
 	// Depth sort
-	qsort(data.rasterizer.sortedTriangles,numFaces+numFaces_rad,sizeof(index_triangle_t),&triAvgDepthCompare);
+	qsort(data.rasterizer.sortedTriangles,numFaces+render_faces_rad,sizeof(index_triangle_t),&triAvgDepthCompare);
 	
 	// For each triangle
 	triangle_t tri;
-	int32_t max_f = imin(imax(rotcnt*9-400,0),numFaces+numFaces_rad);
-	int32_t min_f = imin(imax(rotcnt*9-6000,0),numFaces+numFaces_rad);
-// 	max_f = numFaces+numFaces_rad;
-	for(int32_t i = min_f; i < max_f; i++ ) {
+	for(int32_t i = render_faces_total_start; i < render_faces_total_end; i++ ) {
 		tri.v[0] = data.rasterizer.transformedVertices[data.rasterizer.sortedTriangles[i].v[0]];
 		tri.v[1] = data.rasterizer.transformedVertices[data.rasterizer.sortedTriangles[i].v[1]];
 		tri.v[2] = data.rasterizer.transformedVertices[data.rasterizer.sortedTriangles[i].v[2]];
@@ -453,7 +482,7 @@ void Rasterize() {
 
 	RasterizeInit();
 
-	while(!UserButtonState())
+	while(CurrentBitBinRow(&song) < 1600)
 	{
 		WaitVBL();
 
@@ -479,5 +508,5 @@ void Rasterize() {
 		t++;
 	}
 
-	while(UserButtonState());
+// 	while(UserButtonState());
 }
