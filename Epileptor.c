@@ -97,7 +97,7 @@ void Epileptor(const char* message)
 		}
 
 		int t=VGAFrameCounter()-first;
-		int x=320-t*2;
+		int x=320-(t*5)/2;
 
 		for(int i=0;i<NumberOfScrollerStars;i++)
 		{

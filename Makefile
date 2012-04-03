@@ -69,6 +69,7 @@ C_FILES =	Accelerometer.c \
 		Scroller2.c \
 		Scroller3.c \
 		small_logo.c \
+		endlogo.c \
 			
 S_FILES = 
 

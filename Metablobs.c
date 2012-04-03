@@ -5,6 +5,9 @@
 #include "Random.h"
 
 #include "Graphics/Bitmap.h"
+#include "Graphics/RLEBitmap.h"
+#include "Graphics/Drawing.h"
+
 #include "VectorLibrary/VectorFixed.h"
 #include "VectorLibrary/MatrixFixed.h"
 #define Viewport(x,w,s) (imul(idiv((x),(w))+IntToFixed(1),IntToFixed((s)/2)))
@@ -21,6 +24,10 @@
 
 #include "Metablobs.h"
 #include "Global.h"
+
+#include "BitBin.h"
+
+extern const RLEBitmap EndLogo;
 
 void Metablobs()
 {
@@ -52,7 +59,7 @@ void Metablobs()
 		data.metablobs.blobs[i].blob = blobImg[RandomInteger()%6];
 	}
 
-	while(!UserButtonState())
+	while(CurrentBitBinRow(&song) < 1856)
 	{
 		WaitVBL();
 		
@@ -61,7 +68,7 @@ void Metablobs()
 		else { currframe=&frame1; SetFrameBuffer(framebuffer2); }
 
 		ClearBitmap(currframe);
-		int movementMode = (frame/100) % 3;
+		int movementMode = (CurrentBitBinRow(&song)>>4) % 3;
 		for( int i = 0; i < numBlobs; i++ ) {
 			if(movementMode == 0) {
 				data.metablobs.blobs[i].x += 5 - ((blobImg[0] - data.metablobs.blobs[i].blob) / (19*19)*2);
@@ -110,15 +117,31 @@ void Metablobs()
 			}
 		}
 
-		for( int x = 0; x < 320; x++ ) {
-			for( int y = 0; y < 200; y++ ) {
-				pixels[x+y*320] = (pixels[x+y*320] & 0xE0) | (pixels[x+y*320] >> 6 & 0x3);
+		if( CurrentBitBinRow(&song) < 1824 ) {
+			for( int x = 0; x < 320; x++ ) {
+				for( int y = 0; y < 200; y++ ) {
+					pixels[x+y*320] = (pixels[x+y*320] & 0xE0) | (pixels[x+y*320] >> 6 & 0x3);
+				}
 			}
 		}
+		else {
+			int pixval = 0;
+			for( int x = 0; x < 320; x++ ) {
+				for( int y = 0; y < 200; y++ ) {
+					pixval = FixedToInt(imul(IntToFixed(pixels[x+y*320]), IntToFixed(1855 - CurrentBitBinRow(&song))/32));
+					pixels[x+y*320] = (pixval & 0xE0) | (pixval >> 6 & 0x3);
+				}
+			}
+		}
+
+		DrawRLEBitmap(currframe, &EndLogo, 10, 100 - 31);
 		
 		frame++;
 	}
 
-	while(UserButtonState());
+	// End of demo. Hang.
+	while(1) {
+		WaitVBL();
+	}
 }
 

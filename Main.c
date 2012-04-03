@@ -72,12 +72,12 @@ int main()
 
 	
 	for(;;)
-	{
+	{		
 		LogoShow();
 		RevisionLogo();
 		Scroller3("Welcome to our little prod for the STM32F4. Lets start things off with some lovely full-screen twisters.");
 		SpanScreen();
-		Scroller("That's 4000 pixels of horizontal resulution, can your \"high definition\" screen handle it? Next is our beautiful rotozoomer.");
+		Scroller("4000 pixels of horizontal resulution, can your \"high definition\" screen handle it? Next is our cute and pop rotozoomer.");
 		Rotozoom();
 		Scroller2("Who doesn't love those? 640x480 at 70hz. 192 kb ram 1 mb flash infinite possibilities. Time for greets:");
 		Greets();	
