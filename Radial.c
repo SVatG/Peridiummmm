@@ -20,9 +20,9 @@ extern Font OL16Font;
 #include <stdint.h>
 #include <string.h>
 
-static void RenderBackground(int t,int n,uint8_t *screen);
 static void RenderRadial(int t,uint8_t *screen,
 const uint32_t *lookup1,const uint32_t *lookup2,const uint32_t *lookup3,const uint32_t *lookup4);
+static void Recolour(uint8_t *gray,uint8_t *screen);
 
 void RadialScroller(const char *text)
 {
@@ -31,11 +31,12 @@ void RadialScroller(const char *text)
 	memset(framebuffer1,0,320*200);
 	memset(framebuffer2,0,320*200);
 
-	SetVGAScreenMode320x200(framebuffer1);
+	SetVGAScreenMode212x133(framebuffer1);
 
-	Bitmap frame1,frame2;
-	InitializeBitmap(&frame1,320,200,320,framebuffer1);
-	InitializeBitmap(&frame2,320,200,320,framebuffer2);
+	Bitmap frame1,frame2,ccmframe;
+	InitializeBitmap(&frame1,212,133,212,framebuffer1);
+	InitializeBitmap(&frame2,212,133,212,framebuffer2);
+	InitializeBitmap(&ccmframe,WIDTH*2,HEIGHT*2,WIDTH*2,data.radial.frame);
 
 	int frame=0;
 	int nearestindex=0;
@@ -52,11 +53,46 @@ int last_t=0;
 
 		int t=VGAFrameCounter()-first;
 
-		ClearBitmap(currframe);
-		DrawString(currframe,&OL16Font,320-t,HEIGHT+10,255,text);
+		ClearBitmap(&ccmframe);
 
-		RenderRadial(t,currframe->pixels,lookup1,lookup2,lookup3,lookup4);
+		int x=WIDTH*2-t;
+		for(const char *ptr=text;*ptr;ptr++)
+		{
+			int c=*ptr;
+
+			int y=(isin(x*20+t*33)>>8)+HEIGHT-8;
+
+			DrawCharacter(&ccmframe,&OL16Font,x,y,255,c);
+
+			x+=WidthOfCharacter(&OL16Font,c)+2;
+		}
+
+//		DrawString(&ccmframe,&OL16Font,320-t,HEIGHT+10,255,text);
+//		DrawString(&ccmframe,&OL16Font,320-t,HEIGHT-10-16,255,text);
+
+		RenderRadial(t,ccmframe.pixels,lookup1,lookup2,lookup3,lookup4);
+
+//		DrawString(&ccmframe,&OL16Font,320-t,HEIGHT+10,255,text);
+//		DrawString(&ccmframe,&OL16Font,320-t,HEIGHT-10-16,255,text);
+
+
+		Recolour(ccmframe.pixels,currframe->pixels);
+
+
+		x=WIDTH*2-t;
+		for(const char *ptr=text;*ptr;ptr++)
+		{
+			int c=*ptr;
+
+			int y=(isin(x*20+t*33)>>8)+HEIGHT-8;
+
+			DrawCharacter(currframe,&OL16Font,x,y,255,c);
+
+			x+=WidthOfCharacter(&OL16Font,c)+2;
+		}
+
 last_t=t;
+
 		frame++;
 	}
 
@@ -65,19 +101,16 @@ last_t=t;
 
 static inline void RenderPixel(uint8_t *pixel,const uint32_t *lookup)
 {
-	int sum=*pixel<<2+14;
+	int sum=*pixel<<0+14;
 	for(int i=0;i<SAMPLES;i++)
 	{
 		int val=*lookup++;
-//		int16_t offs=val;
-//		int xblend=(val>>16)&0xff;
-//		int yblend=(val>>24)&0xff;
 		int16_t offs=val>>16;
 		int xblend=(val>>8)&0xff;
 		int yblend=(val>>0)&0xff;
 
 		sum+=(pixel[offs]*(128-xblend)+pixel[offs+1]*xblend)*(128-yblend)
-		+(pixel[offs+320]*(128-xblend)+pixel[offs+321]*xblend)*yblend;
+		+(pixel[offs+WIDTH*2]*(128-xblend)+pixel[offs+WIDTH*2+1]*xblend)*yblend;
 	}
 
 	sum>>=2+14;
@@ -288,7 +321,7 @@ const uint32_t *lookup1,const uint32_t *lookup2,const uint32_t *lookup3,const ui
 	uint8_t *pixel;
 
 	lookup=lookup1;
-	pixel=&screen[WIDTH-1+(HEIGHT-1)*320];
+	pixel=&screen[WIDTH-1+(HEIGHT-1)*WIDTH*2];
 	for(int y=HEIGHT-1;y>=0;y--)
 	{
 		for(int x=WIDTH-1;x>=0;x--)
@@ -297,11 +330,11 @@ const uint32_t *lookup1,const uint32_t *lookup2,const uint32_t *lookup3,const ui
 			lookup+=SAMPLES;
 			pixel--;
 		}
-		pixel-=320-WIDTH;
+		pixel-=WIDTH;
 	}
 
 	lookup=lookup2;
-	pixel=&screen[WIDTH+(HEIGHT-1)*320];
+	pixel=&screen[WIDTH+(HEIGHT-1)*WIDTH*2];
 	for(int y=HEIGHT-1;y>=0;y--)
 	{
 		for(int x=WIDTH;x<2*WIDTH;x++)
@@ -310,11 +343,11 @@ const uint32_t *lookup1,const uint32_t *lookup2,const uint32_t *lookup3,const ui
 			lookup+=SAMPLES;
 			pixel++;
 		}
-		pixel-=320+WIDTH;
+		pixel-=3*WIDTH;
 	}
 
 	lookup=lookup3;
-	pixel=&screen[(WIDTH-1)+HEIGHT*320];
+	pixel=&screen[(WIDTH-1)+HEIGHT*WIDTH*2];
 	for(int y=HEIGHT;y<2*HEIGHT;y++)
 	{
 		for(int x=WIDTH-1;x>=0;x--)
@@ -323,11 +356,11 @@ const uint32_t *lookup1,const uint32_t *lookup2,const uint32_t *lookup3,const ui
 			lookup+=SAMPLES;
 			pixel--;
 		}
-		pixel+=320+WIDTH;
+		pixel+=3*WIDTH;
 	}
 
 	lookup=lookup4;
-	pixel=&screen[WIDTH+HEIGHT*320];
+	pixel=&screen[WIDTH+HEIGHT*WIDTH*2];
 	for(int y=HEIGHT;y<2*HEIGHT;y++)
 	{
 		for(int x=WIDTH;x<2*WIDTH;x++)
@@ -336,8 +369,23 @@ const uint32_t *lookup1,const uint32_t *lookup2,const uint32_t *lookup3,const ui
 			lookup+=SAMPLES;
 			pixel++;
 		}
-		pixel+=320-WIDTH;
+		pixel+=WIDTH;
 	}
 
 	#endif
+}
+
+static void Recolour(uint8_t *gray,uint8_t *screen)
+{
+	uint32_t *src=(uint32_t *)gray;
+	uint32_t *dest=(uint32_t *)screen;
+
+	for(int i=0;i<2*WIDTH*2*HEIGHT/4;i++)
+	{
+		uint32_t val=*src++;
+		val&=0xf8f8f8f8;
+		val>>=3;
+		val|=(val>>3)&0x03030303;
+		*dest++=val;
+	}
 }

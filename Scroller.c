@@ -188,14 +188,14 @@ void Scroller(const char *text)
 		}
 	}
 
-	SetBlankVGAScreenMode200();
+	SetBlankVGAScreenMode400();
 
 	while(UserButtonState());
 }
 
 static void ScrollerHSyncHandler()
 {
-	int line=HandleVGAHSync200();
+	int line=HandleVGAHSync400();
 	if(line<0) return;
 
 	if(line<128||line>=400-128)

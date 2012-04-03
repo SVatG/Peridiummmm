@@ -5,7 +5,7 @@
 #define SAMPLES 4
 #define WIDTH 106
 #define HEIGHT 66
-#define BytesPerRow 320
+#define BytesPerRow (WIDTH*2)
 
 static uint32_t lookup1[HEIGHT][WIDTH][SAMPLES];
 static uint32_t lookup2[HEIGHT][WIDTH][SAMPLES];

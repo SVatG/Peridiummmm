@@ -16,6 +16,6 @@ struct EpileptorData
 	} stars[NumberOfScrollerStars];
 };
 
-void Epileptor();
+void Epileptor(const char *message);
 
 #endif

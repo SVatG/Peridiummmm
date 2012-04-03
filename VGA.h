@@ -14,21 +14,29 @@ extern uint32_t VGAFrameBufferAddress;
 extern uint32_t VGACurrentLineAddress;
 extern uint32_t VGAPixelsPerRow;
 
-void InitializeVGAScreenMode240();
-void InitializeVGAScreenMode200();
-void InitializeVGAScreenMode175();
+void InitializeVGAScreenMode480();
+void InitializeVGAScreenMode400();
+void InitializeVGAScreenMode350();
 
-void SetBlankVGAScreenMode240();
-void SetBlankVGAScreenMode200();
-void SetBlankVGAScreenMode175();
+void SetBlankVGAScreenMode480();
+void SetBlankVGAScreenMode400();
+void SetBlankVGAScreenMode350();
 
 void SetVGAScreenMode240(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
 void SetVGAScreenMode200(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
 void SetVGAScreenMode175(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
 
+void SetVGAScreenMode160(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
+void SetVGAScreenMode133(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
+void SetVGAScreenMode117(uint8_t *framebuffer,int pixelsperrow,int pixelclock);
+
 static inline void SetVGAScreenMode320x240(uint8_t *framebuffer) { SetVGAScreenMode240(framebuffer,320,13); }
 static inline void SetVGAScreenMode320x200(uint8_t *framebuffer) { SetVGAScreenMode200(framebuffer,320,13); }
 static inline void SetVGAScreenMode320x175(uint8_t *framebuffer) { SetVGAScreenMode175(framebuffer,320,13); }
+
+static inline void SetVGAScreenMode212x160(uint8_t *framebuffer) { SetVGAScreenMode160(framebuffer,212,19); }
+static inline void SetVGAScreenMode212x133(uint8_t *framebuffer) { SetVGAScreenMode133(framebuffer,212,19); }
+static inline void SetVGAScreenMode212x175(uint8_t *framebuffer) { SetVGAScreenMode117(framebuffer,212,19); }
 
 static inline void WaitVBL()
 {
@@ -63,7 +71,7 @@ static inline void LowerVGAVSyncLine() { GPIOB->BSRRH=(1<<12); }
 static inline void SetVGASignalToBlack() { GPIOE->BSRRH=0xff00; }
 static inline void SetVGASignal(uint8_t pixel) { ((uint8_t *)&GPIOE->ODR)[1]=pixel; }
 
-static inline int HandleVGAHSync240()
+static inline int HandleVGAHSync480()
 {
 	uint32_t sr=TIM9->SR;
 	TIM9->SR=0;
@@ -98,7 +106,7 @@ static inline int HandleVGAHSync240()
 	return -1;
 }
 
-static inline int HandleVGAHSync200()
+static inline int HandleVGAHSync400()
 {
 	uint32_t sr=TIM9->SR;
 	TIM9->SR=0;
@@ -133,7 +141,7 @@ static inline int HandleVGAHSync200()
 	return -1;
 }
 
-static inline int HandleVGAHSync175()
+static inline int HandleVGAHSync350()
 {
 	uint32_t sr=TIM9->SR;
 	TIM9->SR=0;

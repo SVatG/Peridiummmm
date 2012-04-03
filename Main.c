@@ -42,7 +42,7 @@ int main()
 
 	InitializeAudio(Audio22050HzSettings);
 	SetAudioVolume(0xEF);
-	InitializeVGAScreenMode200();
+	InitializeVGAScreenMode400();
 
 	// "Monitor turns on"
 	for(int i = 0; i < 150; i++) {
@@ -59,7 +59,7 @@ int main()
 		RevisionLogo();
 		Rasterize();
 		LogoShow();
-		Epileptor();
+		Epileptor("Look out honey coz I'm using technology");
 		Greets();
 		SpanScreen();
 		Starfield();
