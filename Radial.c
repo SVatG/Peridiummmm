@@ -20,9 +20,63 @@ extern Font OL16Font;
 #include <stdint.h>
 #include <string.h>
 
+#include "Rasterize.h"
+
+#define Viewport(x,w,s) (imul(idiv((x),(w))+IntToFixed(1),IntToFixed((s)/2)))
+
 static void RenderRadial(int t,uint8_t *screen,
 const uint32_t *lookup1,const uint32_t *lookup2,const uint32_t *lookup3,const uint32_t *lookup4);
 static void Recolour(uint8_t *gray,uint8_t *screen);
+
+#define cubeLine(i,j) DrawLine( \
+		currframe,  \
+		FixedToInt(transformedVertices[i].p.x),  \
+		FixedToInt(transformedVertices[i].p.y), \
+		FixedToInt(transformedVertices[j].p.x), \
+		FixedToInt(transformedVertices[j].p.y), \
+		RawRGB(7,7,3) \
+	)
+
+void CubeBG(Bitmap* currframe, int32_t rotcnt) {
+
+	#include "cube.h"
+	
+	// Projection matrix
+	imat4x4_t proj = imat4x4diagonalperspective(IntToFixed(45),idiv(IntToFixed(WIDTH*2),IntToFixed(HEIGHT*2)),128,IntToFixed(14));
+
+	// Modelview matrix
+	imat4x4_t modelview = imat4x4affinemul(imat4x4translate(ivec3(IntToFixed(0),IntToFixed(0),IntToFixed(-5))),imat4x4rotatex(rotcnt*8));
+	modelview = imat4x4affinemul(modelview,imat4x4rotatez(rotcnt * 4));
+
+	vertex_t transformVertex;
+	ss_vertex_t transformedVertices[8];
+	for(int32_t i = 0; i < numCubeVertices; i++) {
+		transformVertex.p = imat4x4transform(modelview,ivec4(cubeVertices[i].p.x,cubeVertices[i].p.y,cubeVertices[i].p.z,F(1)));
+
+		// Project
+		transformVertex.p = imat4x4transform(proj,transformVertex.p);
+
+		// Perspective divide and viewport transform
+		transformedVertices[i].p = ivec3(
+			Viewport(transformVertex.p.x,transformVertex.p.w,WIDTH*2),
+			Viewport(transformVertex.p.y,transformVertex.p.w,HEIGHT*2),
+			transformVertex.p.z
+		);
+	}
+
+	cubeLine(0,1);
+	cubeLine(1,2);
+	cubeLine(2,3);
+	cubeLine(3,0);
+	cubeLine(4,5);
+	cubeLine(5,6);
+	cubeLine(6,7);
+	cubeLine(7,4);
+	cubeLine(0,4);
+	cubeLine(1,5);
+	cubeLine(2,6);
+	cubeLine(3,7);
+}
 
 void RadialScroller(const char *text)
 {
@@ -55,6 +109,8 @@ int last_t=0;
 
 		ClearBitmap(&ccmframe);
 
+		CubeBG(&ccmframe,t);
+		
 		int x=WIDTH*2-t*3;
 		for(const char *ptr=text;*ptr;ptr++)
 		{

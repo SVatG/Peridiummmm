@@ -87,7 +87,8 @@ int main()
 
 	
 	for(;;)
-	{		
+	{
+		RadialScroller("SVatG hopes this demo will inspire you to write your own demos on the STM32F4. Until next party, peace out.");		
 		LogoShow();
 		RevisionLogo();
 		Scroller3("Welcome to our little prod for the STM32F4. Lets start things off with some lovely full-screen twisters.");

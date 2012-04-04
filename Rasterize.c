@@ -372,15 +372,15 @@ inline static void RasterizeTest(uint8_t* image) {
 		render_faces_rad = FixedToInt(imul(IntToFixed(numFaces_rad), (IntToFixed(rowd - 192) / 20)));
 		render_faces_total_end = numFaces + render_faces_rad;
 	}
-	else if(rowd < 295) {
+	else if(rowd < 305) {
 		render_faces_total_start = 0;
 		render_faces_rad = numFaces_rad;
 		render_faces_total_end = numFaces+render_faces_rad;
 	}
-	else if(rowd < 315) {
+	else if(rowd < 320) {
 		render_faces_total_start = 0;
 		render_faces_rad = numFaces_rad;
-		render_faces_total_end = FixedToInt(imul(IntToFixed(numFaces+numFaces_rad), (IntToFixed(315 - rowd) / 20)));
+		render_faces_total_end = FixedToInt(imul(IntToFixed(numFaces+numFaces_rad), (IntToFixed(320 - rowd) / 15)));
 	}
 	else {
 		render_faces_total_start = 0;
