@@ -87,7 +87,7 @@ void Starfield()
 			DrawRLEBitmap(currframe,sprites[sprite],sx-16,sy-16);
 		}
 
-		int rotation=((CurrentBitBinRow(&song) >> 4) % 5) - 2;
+		int rotation=(((((CurrentBitBinRow(&song) >> 4) * 2342545334) % 7) * 5435342 ) % 5) - 2;
 
 		switch(rotation)
 		{

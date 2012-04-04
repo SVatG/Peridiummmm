@@ -43,7 +43,7 @@ void RadialScroller(const char *text)
 	int first=VGAFrameCounter();
 
 int last_t=0;
-	while(!UserButtonState())
+	while(CurrentBitBinRow(&song) < 1728)
 	{
 		WaitVBL();
 
@@ -55,7 +55,7 @@ int last_t=0;
 
 		ClearBitmap(&ccmframe);
 
-		int x=WIDTH*2-t;
+		int x=WIDTH*2-t*3;
 		for(const char *ptr=text;*ptr;ptr++)
 		{
 			int c=*ptr;
@@ -77,7 +77,7 @@ int last_t=0;
 
 		Recolour(ccmframe.pixels,currframe->pixels);
 
-		x=WIDTH*2-t;
+		x=WIDTH*2-t*3;
 		for(const char *ptr=text;*ptr;ptr++)
 		{
 			int c=*ptr;
@@ -94,7 +94,7 @@ last_t=t;
 		frame++;
 	}
 
-	while(UserButtonState());
+// 	while(UserButtonState());
 }
 
 static inline void RenderPixel(uint8_t *pixel,const uint32_t *lookup)

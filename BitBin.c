@@ -380,7 +380,7 @@ static int32_t Drum1(BitBinChannel *channel)
 	uint32_t index=channel->phase>>16;
 
 	if(index>=sizeof(samples)/sizeof(samples[0])) return 0;
-	else return samples[index];
+	else return samples[index]*2;
 }
 
 static int32_t Drum2(BitBinChannel *channel)
@@ -437,7 +437,7 @@ static int32_t Drum2(BitBinChannel *channel)
 	uint32_t index=channel->phase>>16;
 
 	if(index>=sizeof(samples)/sizeof(samples[0])) return 0;
-	else return samples[index];
+	else return samples[index]*2;
 }
 
 static uint32_t Hash32(uint32_t val)

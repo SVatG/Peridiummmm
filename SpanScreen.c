@@ -106,7 +106,7 @@ void SpanScreen()
 		data.spanscreen.timepointer=data.spanscreen.times[frame];
 		data.spanscreen.colourpointer=data.spanscreen.colours[frame];
 
-		int t=VGAFrameCounter();
+		int t=(VGAFrameCounter()*30)>>5;
 		SetLEDs(1<<((t/3)&3));
 
 		uint16_t *timepointer=data.spanscreen.times[frame^1];

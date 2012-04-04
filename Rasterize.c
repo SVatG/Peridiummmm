@@ -38,11 +38,11 @@
 #include "rad.h"
 #include "spikes.h"
 
-inline static void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t modelview, imat4x4_t proj ) {
+inline static void RasterizeTriangle(uint8_t* image, triangle_t* tri ) {
 	// Winding test
 	if(
-		imul(tri.v[1].p.x - tri.v[0].p.x, tri.v[2].p.y - tri.v[0].p.y) -
-		imul(tri.v[2].p.x - tri.v[0].p.x, tri.v[1].p.y - tri.v[0].p.y)
+		imul(tri->v[1].p.x - tri->v[0].p.x, tri->v[2].p.y - tri->v[0].p.y) -
+		imul(tri->v[2].p.x - tri->v[0].p.x, tri->v[1].p.y - tri->v[0].p.y)
 		< 0
 	) {
 		return;
@@ -53,26 +53,26 @@ inline static void RasterizeTriangle(uint8_t* image, triangle_t tri, imat4x4_t m
 	ss_vertex_t centerVertex;
 	ss_vertex_t lowerVertex;
 
-	if(tri.v[0].p.y < tri.v[1].p.y) {
-		upperVertex = tri.v[0];
-		lowerVertex = tri.v[1];
+	if(tri->v[0].p.y < tri->v[1].p.y) {
+		upperVertex = tri->v[0];
+		lowerVertex = tri->v[1];
 	}
 	else {
-		upperVertex = tri.v[1];
-		lowerVertex = tri.v[0];
+		upperVertex = tri->v[1];
+		lowerVertex = tri->v[0];
 	}
 
-	if(tri.v[2].p.y < upperVertex.p.y) {
+	if(tri->v[2].p.y < upperVertex.p.y) {
 		centerVertex = upperVertex;
-		upperVertex = tri.v[2];
+		upperVertex = tri->v[2];
 	}
 	else {
-		if(tri.v[2].p.y > lowerVertex.p.y) {
+		if(tri->v[2].p.y > lowerVertex.p.y) {
 			centerVertex = lowerVertex;
-			lowerVertex = tri.v[2];
+			lowerVertex = tri->v[2];
 		}
 		else {
-			centerVertex = tri.v[2];
+			centerVertex = tri->v[2];
 		}
 	}
 
@@ -356,26 +356,59 @@ void RasterizeInit() {
 
 inline static void RasterizeTest(uint8_t* image) {
 	int32_t rotcnt = (VGAFrame - startFrame);
-	
+
+	int32_t render_faces_total_start = 0;
+	int32_t render_faces_rad = numFaces_rad;
+	int32_t render_faces_total_end = numFaces+render_faces_rad;
+
+	int32_t rowd = CurrentBitBinRow(&song) - 1280;
+	if(rowd < 192) {
+		render_faces_total_start = 0;
+		render_faces_rad = 0;
+		render_faces_total_end = numFaces;
+	}
+	else if(rowd < 212) {
+		render_faces_total_start = 0;
+		render_faces_rad = FixedToInt(imul(IntToFixed(numFaces_rad), (IntToFixed(rowd - 192) / 20)));
+		render_faces_total_end = numFaces + render_faces_rad;
+	}
+	else if(rowd < 295) {
+		render_faces_total_start = 0;
+		render_faces_rad = numFaces_rad;
+		render_faces_total_end = numFaces+render_faces_rad;
+	}
+	else if(rowd < 315) {
+		render_faces_total_start = 0;
+		render_faces_rad = numFaces_rad;
+		render_faces_total_end = FixedToInt(imul(IntToFixed(numFaces+numFaces_rad), (IntToFixed(315 - rowd) / 20)));
+	}
+	else {
+		render_faces_total_start = 0;
+		render_faces_rad = 0;
+		render_faces_total_end = 0;
+	}
+
+
 	// Do a background
 	for(int i=0;i<NumberOfDotStars;i++){
-		data.rasterizer.dotstars[i].x-=data.rasterizer.dotstars[i].dx;
-		if(data.rasterizer.dotstars[i].x < 0) data.rasterizer.dotstars[i].x = IntToFixed(319);
-		data.rasterizer.dotstars[i].y+=2;
-		if(data.rasterizer.dotstars[i].y >= 200) data.rasterizer.dotstars[i].y = 0;
-		image[FixedToInt(data.rasterizer.dotstars[i].x) + data.rasterizer.dotstars[i].y*WIDTH] = RastRGB(7,7,3);
+		int32_t x = iabs(data.rasterizer.dotstars[i].x + ((data.rasterizer.dotstars[i].dx * rotcnt)>>2));
+		int32_t y = (data.rasterizer.dotstars[i].y + (rotcnt>>1))%HEIGHT;
+		image[FixedToInt(x)%WIDTH + y*WIDTH] = RastRGB(7,7,3);
 	}
 	
 	// Projection matrix
 	imat4x4_t proj = imat4x4diagonalperspective(IntToFixed(45),idiv(IntToFixed(WIDTH),IntToFixed(HEIGHT)),4096,IntToFixed(60));
 	
 	// Modelview matrix
-	imat4x4_t modelview = imat4x4affinemul(imat4x4translate(ivec3(IntToFixed(0),IntToFixed(0),IntToFixed(-30))),imat4x4rotatex(rotcnt*8));
-	modelview = imat4x4affinemul(modelview,imat4x4rotatez(rotcnt * 4));
+	int rotdir = (rowd>>4)%2 == 0 ? -1 : 1;
+	imat4x4_t modelview = imat4x4affinemul(imat4x4translate(ivec3(IntToFixed(0),IntToFixed(0),IntToFixed(-30))),imat4x4rotatex(rotdir*rotcnt*8));
+	modelview = imat4x4affinemul(modelview,imat4x4rotatez(rotdir*rotcnt * 4  + 700*rotdir));
 
-	int rotdir = (rotcnt/48)%2 == 0 ? -1 : 1;
-	imat4x4_t modelview_rad = imat4x4affinemul(imat4x4translate(ivec3(IntToFixed(0),IntToFixed(0),IntToFixed(-30))),imat4x4rotatey(rotcnt*5*rotdir));
-	modelview_rad = imat4x4affinemul(modelview_rad,imat4x4rotatez((rotcnt * 7 + (rotcnt/48)*700)*rotdir));
+	imat4x4_t modelview_rad = imat4x4affinemul(
+		imat4x4translate(ivec3(IntToFixed(0),IntToFixed(0),IntToFixed(-30))),
+		imat4x4rotatey(rotcnt*5)
+	);
+	modelview_rad = imat4x4affinemul(modelview_rad,imat4x4rotatez(rotcnt * 7));
 	
 	// Transform
 	vertex_t transformVertex;
@@ -420,18 +453,15 @@ inline static void RasterizeTest(uint8_t* image) {
 
 
 	// Depth sort
-	qsort(data.rasterizer.sortedTriangles,numFaces+numFaces_rad,sizeof(index_triangle_t),&triAvgDepthCompare);
+	qsort(data.rasterizer.sortedTriangles,numFaces+render_faces_rad,sizeof(index_triangle_t),&triAvgDepthCompare);
 	
 	// For each triangle
 	triangle_t tri;
-	int32_t max_f = imin(imax(rotcnt*9-400,0),numFaces+numFaces_rad);
-	int32_t min_f = imin(imax(rotcnt*9-6000,0),numFaces+numFaces_rad);
-// 	max_f = numFaces+numFaces_rad;
-	for(int32_t i = min_f; i < max_f; i++ ) {
+	for(int32_t i = render_faces_total_start; i < render_faces_total_end; i++ ) {
 		tri.v[0] = data.rasterizer.transformedVertices[data.rasterizer.sortedTriangles[i].v[0]];
 		tri.v[1] = data.rasterizer.transformedVertices[data.rasterizer.sortedTriangles[i].v[1]];
 		tri.v[2] = data.rasterizer.transformedVertices[data.rasterizer.sortedTriangles[i].v[2]];
-		RasterizeTriangle(image, tri, modelview, proj);
+		RasterizeTriangle(image, &tri);
 	}
 	
 	rotcnt++;
@@ -453,7 +483,7 @@ void Rasterize() {
 
 	RasterizeInit();
 
-	while(!UserButtonState())
+	while(CurrentBitBinRow(&song) < 1600)
 	{
 		WaitVBL();
 
@@ -479,5 +509,5 @@ void Rasterize() {
 		t++;
 	}
 
-	while(UserButtonState());
+// 	while(UserButtonState());
 }
