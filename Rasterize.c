@@ -362,17 +362,17 @@ inline static void RasterizeTest(uint8_t* image) {
 	int32_t render_faces_total_end = numFaces+render_faces_rad;
 
 	int32_t rowd = CurrentBitBinRow(&song) - 1280;
-	if(rowd < 192) {
+	if(rowd < 183) {
 		render_faces_total_start = 0;
 		render_faces_rad = 0;
 		render_faces_total_end = numFaces;
 	}
-	else if(rowd < 212) {
+	else if(rowd < 189) {
 		render_faces_total_start = 0;
-		render_faces_rad = FixedToInt(imul(IntToFixed(numFaces_rad), (IntToFixed(rowd - 192) / 20)));
+		render_faces_rad = FixedToInt(imul(IntToFixed(numFaces_rad), (IntToFixed(rowd - 183) / 6)));
 		render_faces_total_end = numFaces + render_faces_rad;
 	}
-	else if(rowd < 305) {
+	else if(rowd < 313) {
 		render_faces_total_start = 0;
 		render_faces_rad = numFaces_rad;
 		render_faces_total_end = numFaces+render_faces_rad;
@@ -380,9 +380,10 @@ inline static void RasterizeTest(uint8_t* image) {
 	else if(rowd < 320) {
 		render_faces_total_start = 0;
 		render_faces_rad = numFaces_rad;
-		render_faces_total_end = FixedToInt(imul(IntToFixed(numFaces+numFaces_rad), (IntToFixed(320 - rowd) / 15)));
+		render_faces_total_end = FixedToInt(imul(IntToFixed(numFaces+numFaces_rad), (IntToFixed(320 - rowd) / 7)));
 	}
 	else {
+		// Doesn't actually happen
 		render_faces_total_start = 0;
 		render_faces_rad = 0;
 		render_faces_total_end = 0;
