@@ -67,9 +67,9 @@ void bezier_draw_partial(Bitmap *dest, bezier_t bez, int ratio){
             t->p[2] = bp2;
             ratios[stackpos] = r*2-128;
         } else {
-            bezier_setpixel(dest, b->p[0], 182);
+            bezier_setpixel(dest, b->p[0], 255);//182);
             if(r>=64){
-                bezier_setpixel(dest, b->p[1], 182);
+                bezier_setpixel(dest, b->p[1], 255);//182);
             }
         }
     }

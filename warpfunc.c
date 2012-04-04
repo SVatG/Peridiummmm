@@ -118,7 +118,7 @@ point_t warp_perspective_2(point_t a, int t){ // fast drift left
 
 point_t warp_perspective_3(point_t a, int t){ // upside-down
     return warp_perspective_generic(a, t, 
-            (int[]){280,200,30,180,     320,10,    0,0}, 
+            (int[]){300,200,30,180,     340,10,    0,0}, 
             (int[]){0,400,  0,420,      50, 200,    -80,220});
 }
 
@@ -129,8 +129,46 @@ point_t warp_perspective_rotright(point_t a, int t){ // rotate right
             (int[]){-500,700,  -500,-300,      400, 600,    400,-200});
 }
 
-point_t warp_perspective_4(point_t a, int t){
+point_t warp_perspective_5(point_t a, int t){ // slightly fast drift left
+    return warp_perspective_generic(a, t, 
+            (int[]){0,0,    320,30,     40, 200,    290,180}, 
+            (int[]){-700,-150,  -600,0,      -750, 0,    -680,220});
+}
+
+
+point_t warp_perspective_4(point_t a, int t){ // mirrored to 1
     return warp_perspective_generic(a, t, 
             (int[]){0,10,    320,0,     40, 200,    290,180}, 
             (int[]){0,400,  0,420,      50, 200,    -80,220});
+}
+
+point_t warp_perspective_6(point_t a, int t){ // right side drifting up
+    return warp_perspective_generic(a, t, 
+            (int[]){0,10,    320,0,     40, 200,    290,180}, 
+            (int[]){-200,50,  -70,560,      -330, 70,    -80,520});
+}
+
+
+point_t warp_perspective_inverted(point_t a, int t){ // trapezoid inverted
+    return warp_perspective_generic(a, t, 
+            (int[]){80,15,    245,2,     0, 200,    320,180}, 
+            (int[]){0,400,  0,420,      50, 200,    -80,220});
+}
+
+point_t warp_perspective_zoomin(point_t a, int t){ // zoom in 
+    return warp_perspective_generic(a, t, 
+            (int[]){0,10,    320,0,     40, 200,    290,180}, 
+            (int[]){-500,-1000,  1500,-1000,      -500,1000,    1500,1000});
+}
+point_t warp_perspective_zoomout(point_t a, int t){ // zoom out
+    t -= 40;
+    return warp_perspective_generic(a, t, 
+            (int[]){-10,0,    330,20,     30, 180,    300,195}, 
+            (int[]){2400,1000,  -800,1000,      2400,-1000,    -800,-1000});
+}
+
+point_t warp_perspective_7(point_t a, int t){ // significant right slant, almost no drift
+    return warp_perspective_generic(a, t, 
+            (int[]){0,30,    320,0,     40, 200,    290,173}, 
+            (int[]){-20,60,  -20,60,      -90, 80,    -90,80});
 }
