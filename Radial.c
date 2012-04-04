@@ -8,6 +8,7 @@
 #include "Graphics/Bitmap.h"
 #include "Graphics/Drawing.h"
 #include "Graphics/Font.h"
+#include "Graphics/GenericDrawing.h"
 
 extern Font OL16Font;
 
@@ -28,7 +29,7 @@ static void RenderRadial(int t,uint8_t *screen,
 const uint32_t *lookup1,const uint32_t *lookup2,const uint32_t *lookup3,const uint32_t *lookup4);
 static void Recolour(uint8_t *gray,uint8_t *screen);
 
-#define cubeLine(i,j) DrawLine( \
+#define cubeLine(i,j) DrawLineDash( \
 		currframe,  \
 		FixedToInt(transformedVertices[i].p.x),  \
 		FixedToInt(transformedVertices[i].p.y), \
@@ -36,6 +37,96 @@ static void Recolour(uint8_t *gray,uint8_t *screen);
 		FixedToInt(transformedVertices[j].p.y), \
 		RawRGB(7,7,3) \
 	)
+
+#define visible(i,j,k) (imul(transformedVertices[j].p.x - transformedVertices[i].p.x, transformedVertices[k].p.y - transformedVertices[i].p.y) - \
+		        imul(transformedVertices[k].p.x - transformedVertices[i].p.x, transformedVertices[j].p.y - transformedVertices[i].p.y) \
+		        > 0)
+
+#define cubeSide(a,b,c,d) \
+	cubeLine(a,b); \
+	cubeLine(b,c); \
+	cubeLine(c,d); \
+	cubeLine(d,a);
+	
+static inline void GenericDrawLineDash(Bitmap *bitmap,int x1,int y1,int x2,int y2,Pixel c,CompositionMode comp,
+GenericDrawPixelFunction *pixelfunc,GenericDrawHorizontalLineFunction *hlinefunc,GenericDrawVerticalLineFunction *vlinefunc)
+{
+	int pixelcnt = 0;
+	
+	if(x1==x2)
+	{
+		if(y1<y2) GenericDrawVerticalLine(bitmap,x1,y1,y2-y1+1,c,comp,vlinefunc);
+		else GenericDrawVerticalLine(bitmap,x1,y2,y1-y2+1,c,comp,vlinefunc);
+		return;
+	}
+	else if(y1==y2)
+	{
+		if(x1<x2) GenericDrawHorizontalLine(bitmap,x1,y1,x2-x1+1,c,comp,hlinefunc);
+		else GenericDrawHorizontalLine(bitmap,x1,y2,x1-x2+1,c,comp,hlinefunc);
+		return;
+	}
+
+	bool steep=abs(y2-y1)>abs(x2-x1);
+
+	if(steep)
+	{
+		int t;
+		t=x1; x1=y1; y1=t;
+		t=x2; x2=y2; y2=t;
+	}
+
+	if(x1>x2)
+	{
+		int t;
+		t=x1; x1=x2; x2=t;
+		t=y1; y1=y2; y2=t;
+	}
+
+	int deltax=x2-x1;
+	int deltay,ydir;
+	if(y1<y2) { deltay=y2-y1; ydir=1; }
+	else { deltay=y1-y2; ydir=-1; }
+
+	int error=deltax>>1;
+	int y=y1;
+
+	if(steep)
+	{
+		for(int x=x1;x<=x2;x++)
+		{
+			pixelcnt = (pixelcnt + 1) % 8;
+			if(pixelcnt < 4) {
+				GenericDrawPixel(bitmap,y,x,c,comp,pixelfunc);
+			}
+			error-=deltay;
+			if(error<0)
+			{
+				y+=ydir;
+				error+=deltax;
+			}
+		}
+	}
+	else
+	{
+		for(int x=x1;x<=x2;x++)
+		{
+			pixelcnt = (pixelcnt + 1) % 8;
+			if(pixelcnt < 4) {
+				GenericDrawPixel(bitmap,x,y,c,comp,pixelfunc);
+			}
+			error-=deltay;
+			if(error<0)
+			{
+				y+=ydir;
+				error+=deltax;
+			}
+		}
+	}
+}
+
+static inline void DrawLineDash(Bitmap *bitmap,int x1,int y1,int x2,int y2,Pixel c) {
+	GenericDrawLineDash(bitmap,x1,y1,x2,y2,c,NULL,DrawPixelNoClipFunction,DrawHorizontalLineNoClipFunction,DrawVerticalLineNoClipFunction);
+}
 
 void CubeBG(Bitmap* currframe, int32_t rotcnt) {
 
@@ -64,18 +155,29 @@ void CubeBG(Bitmap* currframe, int32_t rotcnt) {
 		);
 	}
 
-	cubeLine(0,1);
-	cubeLine(1,2);
-	cubeLine(2,3);
-	cubeLine(3,0);
-	cubeLine(4,5);
-	cubeLine(5,6);
-	cubeLine(6,7);
-	cubeLine(7,4);
-	cubeLine(0,4);
-	cubeLine(1,5);
-	cubeLine(2,6);
-	cubeLine(3,7);
+	if(visible(0,1,2)) {
+		cubeSide(0,1,2,3);
+	}
+
+	if(visible(4,6,5)) {
+		cubeSide(4,5,6,7);
+	}
+
+	if(visible(1,6,2)) {
+		cubeSide(1,5,6,2);
+	}
+
+	if(visible(4,3,7)) {
+		cubeSide(4,0,3,7);
+	}
+
+	if(visible(4,1,0)) {
+		cubeSide(4,5,1,0);
+	}
+
+	if(visible(7,3,2)) {
+		cubeSide(7,6,2,3);
+	}
 }
 
 void RadialScroller(const char *text)
