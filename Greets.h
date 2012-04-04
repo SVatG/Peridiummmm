@@ -25,6 +25,7 @@ struct GreetsData
         
 
 void greets_init();
+void greets_next_effect();
 void greets_inner(Bitmap* currframe);
 void logo_inner(Bitmap* currframe);
 void Greets();

@@ -25,18 +25,18 @@ greet_t greets[] = {
 	{ {120, 30}, "Nuance", 70, &warp_perspective_2, true },
 	{ {20, 60}, "mercury", 70, &warp_perspective_3, true },
 	{ {80, 50}, "Never", 60, &warp_perspective_rotright, true },
-	{ {20, 110}, "Alpha Design", 50, &warp_perspective_2, true },
-	{ {60, 50}, "Stroboholics", 45, &warp_perspective_1, true },
-	{ {20, 60}, "Marvin Minsky", 45, &warp_perspective_1, true },
-	{ {40, 30}, "farbrausch", 55, &warp_perspective_1, true },
-	{ {25, 70}, "#mod_shrine", 50, &warp_perspective_1, true },
-	{ {15, 70}, "Lost Function", 40, &warp_perspective_1, true },
+	{ {30, 110}, "Alpha Design", 50, &warp_perspective_5, true },
+	{ {60, 50}, "Stroboholics", 45, &warp_perspective_6, true },
+	{ {20, 60}, "Marvin Minsky", 45, &warp_perspective_rotright, true },
+	{ {40, 110}, "farbrausch", 55, &warp_perspective_inverted, true },
+	{ {40, 80}, "#mod_shrine", 30, &warp_perspective_zoomin, true },
+	{ {35, 95}, "Lost Function", 50, &warp_perspective_zoomout, true },
 	{ {30, 130}, "noisechanradio", 40, &warp_perspective_1, true },
-	{ {20, 40}, "ubiktune", 70, &warp_perspective_1, true },
-	{ {15, 70}, "Cubicle", 40, &warp_perspective_1, true },
+	{ {80, 80}, "ubiktune", 60, &warp_perspective_6, true },
+	{ {40, 50}, "Cubicle", 40, &warp_perspective_5, true },
     // 3state
-	{ {15, 70}, "monsquaz", 40, &warp_perspective_1, true },
-	{ {15, 70}, "fuckings 2 lamers", 40, &warp_perspective_1, true },
+	{ {75, 80}, "monsquaz", 40, &warp_perspective_4, true },
+	{ {85, 0}, "fuckings 2 lamers", 30, &warp_perspective_7, true },
     { {0,0}, NULL, 0, NULL, false}, // filler
     { {0,0}, NULL, 0, NULL, false} // filler
 };
@@ -54,7 +54,7 @@ void greets_init(){
     gprev = greets+0;
     gcur = greets+1;
     gnext = greets+2;
-    tick=-1;
+    tick=-30;
     done = false;
     textpts1 = data.greets.textpts1;
     textpts2 = data.greets.textpts2;
@@ -64,7 +64,7 @@ void greets_init(){
 }
 
 void logo_init(){
-    tick = -1;
+    tick = 0;
     done = false;
 
 }
@@ -97,18 +97,15 @@ void Greets(){
 
         ClearBitmap(currframe);
 
-        greets_inner(currframe);
+        if(CurrentBitBinRow(&song) % 16 == 8 && tick > 50){
+            greets_next_effect();
+        }
 
-//        volatile int delay;
-//        for(delay=0; delay<500000; ++delay)
-            ;
-        
+        greets_inner(currframe);
 
 //        print_vga_line(currframe);
 
 	}
-
-// 	while(UserButtonState() && (!done));
 }
 
 void RevisionLogo(){
@@ -148,41 +145,39 @@ void RevisionLogo(){
 
 void logo_inner(Bitmap* currframe){
     tick++;
-    point_t p={100,70};
+    point_t p={90,70};
     if(tick<67){
-        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, tick*2);
+        render_text_partial(currframe, " ", p, 115, revision_logo_glyph, tick*2);
     } else if(tick < 67*2){
-        render_text(currframe, " ", p, 100, revision_logo_glyph);
+        render_text(currframe, " ", p, 115, revision_logo_glyph);
     } else if(tick < 67*3){
-        render_text_partial(currframe, " ", p, 100, revision_logo_glyph, -((tick-67*2)*2));
+        render_text_partial(currframe, " ", p, 115, revision_logo_glyph, -((tick-67*2)*2));
     } else {
         done = true;
     }
 }
 
+void greets_next_effect(){
+    tick = 0;
+    greetindex++;
+    gprev = greets + greetindex-1;
+    gcur = greets + greetindex;
+    gnext = greets + greetindex+1;
+    if(!gcur->show && !gnext->show){
+        done=true;
+        greetindex = 0;
+    }
+}
+
 void greets_inner(Bitmap* currframe){
 
-    // handle what the hell we do
-    tock++;
-    if(tock>=1){
-        tick++;
-        tock=0;
-    }
-    if(tick>67){
-        tick = 0;
-        greetindex++;
-        gprev = greets + greetindex-1;
-        gcur = greets + greetindex;
-        gnext = greets + greetindex+1;
-        if(!gcur->show && !gnext->show){
-            done=true;
-            greetindex = 1;
-        }
-    }
-
+    // first draw stars (below everything
     greetstars_draw(currframe);
 
-    if(tick<= 34){ // construct cur / finish transition from prev
+    if(tick<0){
+        // do nothing (except stars)
+
+    } else if(tick<= 34){ // construct cur / finish transition from prev
         // cur
         if(gcur->show){
             render_text_partial_warped(currframe, gcur->text, gcur->pos, gcur->size, font_enri_glyph, tick*128/34, gcur->warpfunc, tick+33);
@@ -206,6 +201,12 @@ void greets_inner(Bitmap* currframe){
             get_text_points_warped(textpts2, &b, gnext->text, gnext->pos, gnext->size, font_enri_glyph, true, gnext->warpfunc, tick+33-67);
             make_transition(currframe, textpts1, a, textpts2, b, (tick-34)*128/33);
         }
+    }
+
+    tock++; //TODO:remove tock
+    if(tock>=1){
+        tick++;
+        tock=0;
     }
 }
 
