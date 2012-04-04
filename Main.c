@@ -85,8 +85,6 @@ int main()
 13: METABLOBS W/ FADE OF SOME KIND                                                                                             00:96 -> END
 */
 
-    song.currentrow=630;
-    
 	for(;;)
 	{		
 		LogoShow();

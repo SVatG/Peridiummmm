@@ -69,6 +69,9 @@ void Metablobs()
 
 		ClearBitmap(currframe);
 		int movementMode = (CurrentBitBinRow(&song)>>4) % 3;
+		if(CurrentBitBinRow(&song) >= 1856 - 16) {
+			movementMode = 0;
+		}
 		for( int i = 0; i < numBlobs; i++ ) {
 			if(movementMode == 0) {
 				data.metablobs.blobs[i].x += 5 - ((blobImg[0] - data.metablobs.blobs[i].blob) / (19*19)*2);
