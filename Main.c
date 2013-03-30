@@ -63,7 +63,7 @@ int main()
 
 	InitializeAudio(Audio22050HzSettings);
 	SetAudioVolume(0xEF);
-	InitializeVGAScreenMode400();
+	InitializeVGA();
 
 	waitForMonitor();
 	
