@@ -11,3 +11,4 @@ More information:
 * [Youtube capture](http://www.youtube.com/watch?v=KsToQmFndpg)
 * [Original binary file](http://aka-san.halcy.de/revision2012/peridiummmm.zip)
 * [More information about the VGA hardware](https://bitbucket.org/WAHa_06x36/stm32f4-vga)
+* [Following STM32F4DISCOVERY demo](https://bitbucket.org/WAHa_06x36/jupiter-and-beyond)
